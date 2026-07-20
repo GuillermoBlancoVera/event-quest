@@ -1,0 +1,1 @@
+variable "prefix" {type=string} variable "log_groups" {type=list(string)} variable "tags" {type=map(string)} resource "aws_cloudwatch_log_metric_filter" "errors" {for_each=toset(var.log_groups) name="${var.prefix}-${replace(each.value,"/","-")}-errors" log_group_name=each.value pattern="ERROR" metric_transformation{name="Errors" namespace="${var.prefix}/Lambda" value="1"}}

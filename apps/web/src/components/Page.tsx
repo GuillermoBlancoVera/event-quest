@@ -1,0 +1,1 @@
+import type { ReactNode } from 'react'; export function Page({eyebrow,title,children}:{eyebrow?:string;title:string;children:ReactNode}){return <section className="page"><span className="wildflower" aria-hidden="true">❀</span><p className="eyebrow">{eyebrow??'Celebremos juntos'}</p><h1>{title}</h1>{children}</section>}

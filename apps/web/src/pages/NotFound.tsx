@@ -1,0 +1,1 @@
+import { Link } from 'react-router-dom'; import { Page } from '../components/Page'; export function NotFound(){return <Page title="Este camino no lleva a la fiesta"><p className="lead">Volvamos a la celebración.</p><Link className="button" to="/">Volver al inicio</Link></Page>}
