@@ -10,11 +10,11 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm }
+        with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @event-quest/web build
         env: { VITE_API_URL: '${{ vars.VITE_API_URL }}' }
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with: { path: apps/web/dist }
       - id: deployment
         uses: actions/deploy-pages@v4
