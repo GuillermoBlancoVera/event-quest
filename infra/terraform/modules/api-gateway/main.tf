@@ -1,1 +1,11 @@
-variable "name" {type=string} variable "lambdas" {type=map(string)} variable "custom_domain" {type=string default=null} variable "tags" {type=map(string)} resource "aws_apigatewayv2_api" "this" {name=var.name protocol_type="HTTP" cors_configuration{allow_origins=["*"] allow_methods=["GET","POST","OPTIONS"] allow_headers=["content-type","authorization"]} tags=var.tags} resource "aws_apigatewayv2_integration" "this" {for_each=var.lambdas api_id=aws_apigatewayv2_api.this.id integration_type="AWS_PROXY" integration_uri=each.value payload_format_version="2.0"} resource "aws_apigatewayv2_stage" "this" {api_id=aws_apigatewayv2_api.this.id name="$default" auto_deploy=true} output "url" {value=aws_apigatewayv2_stage.this.invoke_url}
+variable "name" {type=string} variable "lambdas" {type=map(object({invoke_arn=string,function_name=string}))} variable "custom_domain" {type=string default=null} variable "tags" {type=map(string)}
+
+locals { routes={"POST /register-user"="register-user","GET /question/{id}"="get-question","POST /submit-answer/{id}"="submit-answer","GET /ranking"="get-ranking","GET /stats"="get-stats"} }
+
+resource "aws_apigatewayv2_api" "this" {name=var.name protocol_type="HTTP" cors_configuration{allow_origins=["*"] allow_methods=["GET","POST","OPTIONS"] allow_headers=["content-type","authorization"]} tags=var.tags}
+resource "aws_apigatewayv2_integration" "this" {for_each=var.lambdas api_id=aws_apigatewayv2_api.this.id integration_type="AWS_PROXY" integration_uri=each.value.invoke_arn payload_format_version="2.0"}
+resource "aws_apigatewayv2_route" "this" {for_each=local.routes api_id=aws_apigatewayv2_api.this.id route_key=each.key target="integrations/${aws_apigatewayv2_integration.this[each.value].id}"}
+resource "aws_lambda_permission" "api_gateway" {for_each={for function_name in values(local.routes):function_name=>var.lambdas[function_name]} statement_id="AllowApiGatewayInvoke-${each.key}" action="lambda:InvokeFunction" function_name=each.value.function_name principal="apigateway.amazonaws.com" source_arn="${aws_apigatewayv2_api.this.execution_arn}/*/*"}
+resource "aws_apigatewayv2_stage" "this" {api_id=aws_apigatewayv2_api.this.id name="$default" auto_deploy=true}
+
+output "url" {value=aws_apigatewayv2_stage.this.invoke_url}
