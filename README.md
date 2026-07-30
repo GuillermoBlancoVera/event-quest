@@ -26,7 +26,7 @@ Set `VITE_API_URL` in `apps/web/.env.local` to the HTTP API URL when testing aga
 
 ## Deploy
 
-Create a private S3 bucket in `eu-west-1` for the Lambda artifacts. Build each service, zip its `dist/index.mjs` as `<service>.zip`, and upload all six zip files to that bucket. Then:
+Create a private S3 bucket in `eu-west-1` for the Lambda artifacts. Build each service, zip its `dist/index.js` as `<service>.zip`, and upload all six zip files to that bucket. Then:
 
 ```bash
 cd infra/terraform
