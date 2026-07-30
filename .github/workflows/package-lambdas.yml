@@ -1,5 +1,5 @@
 name: Package Lambdas
-on: { push: { branches: [main] }, workflow_dispatch: {} }
+on: { push: { branches: [develop] }, workflow_dispatch: {} }
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -7,8 +7,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm }
+        with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter './services/*' build
       - uses: actions/upload-artifact@v4
-        with: { name: lambda-artifacts, path: services/*/dist/index.mjs }
+        with: { name: lambda-artifacts, path: services/*/dist/index.js }

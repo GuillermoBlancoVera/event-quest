@@ -13,7 +13,7 @@ The web app is a static, mobile-first client. Each Lambda owns a single applicat
 
 ## Local development
 
-Requirements: Node 20+, pnpm 9+, Terraform 1.6+, and AWS credentials for infrastructure work.
+Requirements: Node 24+, pnpm 9+, Terraform 1.6+, AWS CLI, and AWS credentials for infrastructure work.
 
 ```bash
 pnpm install
@@ -26,7 +26,7 @@ Set `VITE_API_URL` in `apps/web/.env.local` to the HTTP API URL when testing aga
 
 ## Deploy
 
-Build each service with `pnpm --filter './services/*' build`, zip `dist/index.mjs` per service, and upload the artifacts to the configured S3 bucket. Then:
+Create a private S3 bucket in `eu-west-1` for the Lambda artifacts. Build each service, zip its `dist/index.js` as `<service>.zip`, and upload all six zip files to that bucket. Then:
 
 ```bash
 cd infra/terraform
@@ -36,7 +36,7 @@ terraform validate
 terraform apply -var='lambda_artifact_bucket=your-artifact-bucket'
 ```
 
-Set GitHub Pages in repository settings and add `VITE_API_URL` as a repository variable. The Pages workflow publishes `apps/web/dist` from `main`; the validation workflow runs type checks, tests, builds and Terraform validation on pull requests.
+Copy the resulting `api_url` and add it as the `VITE_API_URL` repository variable in GitHub. The Pages workflow publishes `apps/web/dist` from `develop`; the validation workflow runs type checks, tests, builds and Terraform validation on pull requests. The API includes the public game routes; keep the admin Lambda private until an API Gateway authorizer is configured.
 
 ## API
 

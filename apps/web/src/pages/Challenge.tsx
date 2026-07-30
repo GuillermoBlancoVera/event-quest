@@ -1,1 +1,53 @@
-import { useEffect,useState } from 'react'; import { useParams } from 'react-router-dom'; import type { QuestionResponse } from '@event-quest/shared'; import { api } from '../lib/api'; import { Page } from '../components/Page'; export function Challenge(){const {id}=useParams();const [question,setQuestion]=useState<QuestionResponse>();const [answer,setAnswer]=useState('');const [message,setMessage]=useState('');useEffect(()=>{api.getQuestion(Number(id)).then(setQuestion).catch(e=>setMessage(e.message))},[id]);const submit=async()=>{const userId=localStorage.getItem('event-quest-user');if(!userId)return setMessage('Primero regístrate en la mesa de bienvenida.');try{const result=await api.submitAnswer(Number(id),{userId,answer});setMessage(result.correct?`¡Qué bien! Has conseguido ${result.awardedPoints} puntos.`:'Casi… sigue explorando la finca.')}catch(e){setMessage(e instanceof Error?e.message:'Inténtalo de nuevo.')}};return <Page eyebrow="Reto con código QR" title={question?.title??'Un pequeño misterio'}>{message?<p className="notice">{message}</p>:!question?<p>Desvelando la pista…</p>:<><p className="lead">{question.question}</p><div className="answers">{question.answers.map(item=><button className={answer===item?'selected':''} onClick={()=>setAnswer(item)} key={item}>{item}</button>)}</div><button className="button" disabled={!answer} onClick={submit}>Enviar respuesta</button></>}</Page>}
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import type { ChallengeAttempt, QuestionResponse } from '@event-quest/shared';
+import { api } from '../lib/api';
+import { Page } from '../components/Page';
+
+export function Challenge() {
+  const { id } = useParams();
+  const challengeId = Number(id);
+  const userId = localStorage.getItem('event-quest-user');
+  const navigate = useNavigate();
+  const [question, setQuestion] = useState<QuestionResponse>();
+  const [answer, setAnswer] = useState('');
+  const [attempt, setAttempt] = useState<ChallengeAttempt>();
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!userId || !Number.isInteger(challengeId)) return;
+    Promise.all([api.getQuestion(challengeId), api.getProfile(userId)])
+      .then(([loadedQuestion, profile]) => {
+        setQuestion(loadedQuestion);
+        setAttempt(profile.history.find(item => item.challengeId === challengeId));
+      })
+      .catch(error => setMessage(error instanceof Error ? error.message : 'No se ha podido cargar el reto.'));
+  }, [challengeId, userId]);
+
+  if (!userId) return <Navigate to="/juego" replace />;
+
+  const resultMessage = attempt && (attempt.correct
+    ? `Ya has jugado a este reto y has acertado. Has conseguido ${attempt.awardedPoints} puntos.`
+    : 'Ya has jugado a este reto, pero esta vez no acertaste. Has conseguido 0 puntos.');
+
+  const submit = async () => {
+    if (attempt) {
+      navigate('/juego/perfil');
+      return;
+    }
+    if (!answer) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const result = await api.submitAnswer(challengeId, { userId, answer });
+      setAttempt(result.attempt);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'No se ha podido enviar la respuesta.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <Page eyebrow="Reto con código QR" title={question?.title ?? 'Un pequeño misterio'}>{!question ? <p>{message || 'Desvelando la pista…'}</p> : <><p className="lead">{question.question}</p>{(resultMessage || message) && <p className="notice">{resultMessage || message}</p>}<div className="answers">{question.answers.map(item => <button className={answer === item ? 'selected' : ''} disabled={Boolean(attempt)} onClick={() => setAnswer(item)} key={item}>{item}</button>)}</div><button className="button" disabled={(!answer && !attempt) || busy} onClick={submit}>{busy ? 'Enviando…' : attempt ? 'Volver a mi perfil' : 'Enviar respuesta'}</button></>}</Page>;
+}
