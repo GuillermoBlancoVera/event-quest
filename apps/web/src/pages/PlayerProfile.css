@@ -1,0 +1,48 @@
+.profile-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.profile-list li,
+.profile-ranking .profile-ranking-item {
+  margin: 0;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px #1722350d;
+}
+
+.profile-list li {
+  padding: 0;
+}
+
+.profile-challenge-link {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  color: #172235;
+  text-decoration: none;
+}
+
+.profile-challenge-link:active {
+  background: #f2f6fb;
+}
+
+.profile-challenge-link .challenge-points {
+  margin-left: auto;
+  text-align: right;
+}
+
+.profile-ranking {
+  display: grid;
+  gap: .75rem;
+  max-width: none;
+  margin: 0;
+}
+
+.profile-ranking .profile-ranking-item {
+  padding: .75rem;
+}

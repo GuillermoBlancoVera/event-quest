@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { ChallengeAttempt, QuestionResponse } from '@event-quest/shared';
 import { api } from '../lib/api';
 import { Page } from '../components/Page';
@@ -8,6 +8,7 @@ export function Challenge() {
   const { id } = useParams();
   const challengeId = Number(id);
   const userId = localStorage.getItem('event-quest-user');
+  const navigate = useNavigate();
   const [question, setQuestion] = useState<QuestionResponse>();
   const [answer, setAnswer] = useState('');
   const [attempt, setAttempt] = useState<ChallengeAttempt>();
@@ -31,7 +32,11 @@ export function Challenge() {
     : 'Ya has jugado a este reto, pero esta vez no acertaste. Has conseguido 0 puntos.');
 
   const submit = async () => {
-    if (!answer || attempt) return;
+    if (attempt) {
+      navigate('/juego/perfil');
+      return;
+    }
+    if (!answer) return;
     setBusy(true);
     setMessage('');
     try {
@@ -44,5 +49,5 @@ export function Challenge() {
     }
   };
 
-  return <Page eyebrow="Reto con código QR" title={question?.title ?? 'Un pequeño misterio'}>{!question ? <p>{message || 'Desvelando la pista…'}</p> : <><p className="lead">{question.question}</p>{(resultMessage || message) && <p className="notice">{resultMessage || message}</p>}<div className="answers">{question.answers.map(item => <button className={answer === item ? 'selected' : ''} disabled={Boolean(attempt)} onClick={() => setAnswer(item)} key={item}>{item}</button>)}</div><button className="button" disabled={!answer || Boolean(attempt) || busy} onClick={submit}>{busy ? 'Enviando…' : attempt ? 'Reto ya jugado' : 'Enviar respuesta'}</button></>}</Page>;
+  return <Page eyebrow="Reto con código QR" title={question?.title ?? 'Un pequeño misterio'}>{!question ? <p>{message || 'Desvelando la pista…'}</p> : <><p className="lead">{question.question}</p>{(resultMessage || message) && <p className="notice">{resultMessage || message}</p>}<div className="answers">{question.answers.map(item => <button className={answer === item ? 'selected' : ''} disabled={Boolean(attempt)} onClick={() => setAnswer(item)} key={item}>{item}</button>)}</div><button className="button" disabled={(!answer && !attempt) || busy} onClick={submit}>{busy ? 'Enviando…' : attempt ? 'Volver a mi perfil' : 'Enviar respuesta'}</button></>}</Page>;
 }

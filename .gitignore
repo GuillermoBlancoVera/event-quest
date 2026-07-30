@@ -4,6 +4,8 @@ dist
 .terraform
 *.tfstate*
 coverage
+.env.local
+apps/web/.env.local
 .tools/
 infra/terraform/tfplan*
 /admin.zip
