@@ -16,6 +16,7 @@ data "aws_iam_policy_document" "dynamo" {
   statement {
     actions = [
       "dynamodb:GetItem",
+      "dynamodb:BatchGetItem",
       "dynamodb:PutItem",
       "dynamodb:Scan",
       "dynamodb:TransactWriteItems",

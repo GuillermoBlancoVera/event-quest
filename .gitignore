@@ -12,3 +12,5 @@ infra/terraform/tfplan*
 /get-stats.zip
 /register-user.zip
 /submit-answer.zip
+/get-profile.zip
+/login.zip

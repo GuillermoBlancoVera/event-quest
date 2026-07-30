@@ -9,6 +9,8 @@ variable "tags" { type = map(string) }
 locals {
   routes = {
     "POST /register-user"      = "register-user"
+    "POST /login"              = "login"
+    "GET /profile/{id}"        = "get-profile"
     "GET /question/{id}"       = "get-question"
     "POST /submit-answer/{id}" = "submit-answer"
     "GET /ranking"             = "get-ranking"

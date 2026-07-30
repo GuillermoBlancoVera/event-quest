@@ -5,7 +5,7 @@ locals {
     Environment = var.environment
     ManagedBy   = "Terraform"
   }
-  services = toset(["register-user", "get-question", "submit-answer", "get-ranking", "get-stats", "admin"])
+  services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "get-ranking", "get-stats", "admin"])
 }
 
 module "dynamodb" {

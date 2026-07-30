@@ -12,15 +12,15 @@ resource "aws_cloudwatch_log_group" "this" {
 }
 
 resource "aws_lambda_function" "this" {
-  function_name = var.name
-  role          = var.role_arn
-  handler       = "index.handler"
-  runtime       = "nodejs22.x"
-  s3_bucket     = var.artifact_bucket
-  s3_key        = var.artifact_key
+  function_name    = var.name
+  role             = var.role_arn
+  handler          = "index.handler"
+  runtime          = "nodejs22.x"
+  s3_bucket        = var.artifact_bucket
+  s3_key           = var.artifact_key
   source_code_hash = filebase64sha256("${path.root}/../../${var.artifact_key}")
-  timeout       = 10
-  memory_size   = 256
+  timeout          = 10
+  memory_size      = 256
 
   environment {
     variables = var.environment
