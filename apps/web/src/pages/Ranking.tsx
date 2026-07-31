@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import type { RankingEntry, RankingResponse, RankingScope } from '@event-quest/shared';
 import { api } from '../lib/api';
 import { Page } from '../components/Page';
-import './Ranking.css';
 
 const labels: Record<RankingScope, string> = { global: 'General', team: 'Equipos', group: 'Grupos' };
 const assetsUrl = (key: string) => `https://event-quest-production-assets-372212891039.s3.eu-west-1.amazonaws.com/${key.split('/').map(encodeURIComponent).join('/')}`;

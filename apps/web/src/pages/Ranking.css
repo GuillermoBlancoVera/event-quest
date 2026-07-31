@@ -1,4 +1,5 @@
 .ranking {
+  width: 100%;
   max-width: none;
 }
 
@@ -10,6 +11,28 @@
   place-items: center;
   border-radius: 50%;
   overflow: hidden;
+}
+
+.ranking li > strong {
+  width: 3ch;
+  text-align: right;
+}
+
+.ranking li {
+  display: grid;
+  grid-template-columns: 2rem 42px minmax(0, 1fr) 30px 3ch;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ranking li > span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ranking-affiliation-icon svg {

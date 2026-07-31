@@ -58,3 +58,21 @@
   height: 34px;
   flex-basis: 34px;
 }
+
+@media (max-width: 680px) {
+  .profile-id {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .profile-id > div:last-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .profile-id h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
