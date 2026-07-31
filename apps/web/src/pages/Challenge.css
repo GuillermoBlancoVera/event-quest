@@ -3,6 +3,7 @@
   background: #d9f0df;
   color: #0f5f2b;
   opacity: 1;
+  transform: translateX(4px);
 }
 
 .answers .answer-incorrect:disabled {
@@ -10,6 +11,7 @@
   background: #f8dddd;
   color: #982c2c;
   opacity: 1;
+  transform: translateX(4px);
 }
 
 .answers button:disabled {
