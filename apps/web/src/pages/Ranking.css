@@ -20,13 +20,20 @@
 
 .ranking li {
   display: grid;
-  grid-template-columns: 1.7rem 42px minmax(0, 1fr) 30px 3ch;
+  grid-template-columns: 1.7rem 42px minmax(0, 1fr) 64px 3ch;
   gap: .45rem;
   align-items: center;
   width: 100%;
   min-width: 0;
   overflow: hidden;
   padding: .65rem .55rem;
+}
+
+.ranking-affiliations {
+  display: flex;
+  justify-content: flex-end;
+  gap: .25rem;
+  min-width: 0;
 }
 
 .ranking li > span {

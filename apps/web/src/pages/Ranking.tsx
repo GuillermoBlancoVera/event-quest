@@ -20,10 +20,17 @@ export function RankingAffiliationIcon({ name, iconKey, to }: { name: string; ic
   return to ? <Link className="ranking-affiliation-icon" to={to} title={name} aria-label={`Ver ${name}`}>{content}</Link> : <div className="ranking-affiliation-icon" title={name} aria-label={name}>{content}</div>;
 }
 
+export function RankingAffiliationIcons({ entry }: { entry: RankingEntry }) {
+  const affiliations = [entry.parentAffiliation, entry.affiliation]
+    .filter((affiliation): affiliation is NonNullable<typeof affiliation> => Boolean(affiliation))
+    .filter((affiliation, index, items) => items.findIndex(item => item.affiliationId === affiliation.affiliationId) === index);
+  return affiliations.length ? <div className="ranking-affiliations">{affiliations.map(affiliation => <RankingAffiliationIcon key={affiliation.affiliationId} name={affiliation.name} iconKey={affiliation.avatarKey} to={`/juego/afiliacion/${affiliation.affiliationId}`} />)}</div> : null;
+}
+
 export function Ranking() {
   const [data, setData] = useState<RankingResponse>();
   const [scope, setScope] = useState<RankingScope>('global');
   const [error, setError] = useState('');
   useEffect(() => { const load = () => api.getRanking(scope).then(setData).catch(error => setError(error.message)); load(); const id = setInterval(load, 10000); return () => clearInterval(id); }, [scope]);
-  return <Page eyebrow="Clasificación en directo" title="La aventura continúa"><div className="tabs">{(['global', 'team', 'group'] as RankingScope[]).map(item => <button className={item === scope ? 'active' : ''} onClick={() => setScope(item)} key={item}>{labels[item]}</button>)}</div>{error ? <p className="notice">{error}</p> : !data ? <p>Reuniendo puntuaciones…</p> : <ol className="ranking">{data.entries.map(entry => { const affiliation = entry.parentAffiliation ?? entry.affiliation; return <li key={entry.userId}><b className="ranking-position">{entry.rank}</b><RankingAvatar entry={entry} /><span>{entry.name}</span>{affiliation && <RankingAffiliationIcon name={affiliation.name} iconKey={affiliation.avatarKey} to={`/juego/afiliacion/${affiliation.affiliationId}`} />}<strong>{entry.score}</strong></li>; })}</ol>}{data?.frozen && <p className="notice">La clasificación se ha congelado con cariño.</p>}</Page>;
+  return <Page eyebrow="Clasificación en directo" title="La aventura continúa"><div className="tabs">{(['global', 'team', 'group'] as RankingScope[]).map(item => <button className={item === scope ? 'active' : ''} onClick={() => setScope(item)} key={item}>{labels[item]}</button>)}</div>{error ? <p className="notice">{error}</p> : !data ? <p>Reuniendo puntuaciones…</p> : <ol className="ranking">{data.entries.map(entry => <li key={entry.userId}><b className="ranking-position">{entry.rank}</b><RankingAvatar entry={entry} /><span>{entry.name}</span><RankingAffiliationIcons entry={entry} /><strong>{entry.score}</strong></li>)}</ol>}{data?.frozen && <p className="notice">La clasificación se ha congelado con cariño.</p>}</Page>;
 }
