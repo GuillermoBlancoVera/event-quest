@@ -11,6 +11,7 @@ locals {
     "POST /register-user"      = "register-user"
     "POST /login"              = "login"
     "GET /profile/{id}"        = "get-profile"
+    "GET /challenges"          = "get-question"
     "GET /question/{id}"       = "get-question"
     "POST /submit-answer/{id}" = "submit-answer"
     "GET /ranking"             = "get-ranking"

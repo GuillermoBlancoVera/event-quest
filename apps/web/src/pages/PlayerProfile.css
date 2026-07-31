@@ -55,6 +55,25 @@
   background: #f2f6fb;
 }
 
+.profile-list li.profile-challenge-locked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: #d3dbe5 !important;
+  color: #63728a;
+}
+
+.profile-challenge-locked > * {
+  opacity: .58;
+}
+
+.challenge-lock {
+  flex: 0 0 auto;
+  filter: grayscale(1);
+}
+
 .profile-challenge-link .challenge-points {
   margin-left: auto;
   text-align: right;

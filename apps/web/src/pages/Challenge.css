@@ -1,0 +1,18 @@
+.answers .answer-correct:disabled {
+  border-color: #16803c;
+  background: #d9f0df;
+  color: #0f5f2b;
+  opacity: 1;
+}
+
+.answers .answer-incorrect:disabled {
+  border-color: #c53939;
+  background: #f8dddd;
+  color: #982c2c;
+  opacity: 1;
+}
+
+.answers button:disabled {
+  cursor: default;
+  pointer-events: none;
+}

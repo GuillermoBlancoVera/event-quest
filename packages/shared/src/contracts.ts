@@ -6,5 +6,6 @@ export interface SubmitAnswerRequest { userId: string; answer: string; challenge
 export interface SubmitAnswerResponse { correct: boolean; awardedPoints: number; score: number; completedChallenges: number[]; attempt: ChallengeAttempt; }
 export interface ApiError { code: string; message: string; }
 export interface RankingResponse { scope: RankingScope; entries: RankingEntry[]; affiliationScores: Record<string, number>; frozen: boolean; }
-export type QuestionResponse = Omit<Challenge, 'correctAnswer'>;
-export interface EventApi { registerUser(input: RegisterUserRequest): Promise<User>; login(input: LoginRequest): Promise<User>; getProfile(userId: string): Promise<PlayerProfile>; getQuestion(id: number): Promise<QuestionResponse>; submitAnswer(id: number, input: SubmitAnswerRequest): Promise<SubmitAnswerResponse>; getRanking(scope?: RankingScope, filter?: string): Promise<RankingResponse>; getStats(): Promise<Stats>; }
+export type QuestionResponse = Omit<Challenge, 'correctAnswer'> & { correctAnswer?: string };
+export type ChallengeListItem = Pick<Challenge, 'challengeId' | 'title'>;
+export interface EventApi { registerUser(input: RegisterUserRequest): Promise<User>; login(input: LoginRequest): Promise<User>; getProfile(userId: string): Promise<PlayerProfile>; getChallenges(): Promise<ChallengeListItem[]>; getQuestion(id: number, userId?: string): Promise<QuestionResponse>; submitAnswer(id: number, input: SubmitAnswerRequest): Promise<SubmitAnswerResponse>; getRanking(scope?: RankingScope, filter?: string): Promise<RankingResponse>; getStats(): Promise<Stats>; }
