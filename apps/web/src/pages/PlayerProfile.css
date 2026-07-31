@@ -137,6 +137,21 @@
   background: #e9eff8;
 }
 
+.profile-logout {
+  display: block;
+  margin: 1.25rem auto 0;
+  border: 0;
+  background: transparent;
+  color: #eff5ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.profile-logout:hover {
+  color: #f6c86b;
+}
+
 .profile-hero .profile-summary-details .game-kicker {
   margin: 0;
   padding-bottom: .5rem;
