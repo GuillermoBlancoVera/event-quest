@@ -7,8 +7,22 @@
   margin-top: 1.25rem;
 }
 
+.profile-summary {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .profile-content .profile-tabs {
   margin: 0 0 1rem;
+}
+
+.profile-content .profile-tabs button {
+  color: #eff5ff;
+  border-color: #aebdd3;
+}
+
+.profile-content .profile-tabs .active {
+  color: #fff;
 }
 
 .profile-list li,
@@ -57,15 +71,23 @@
 
 .profile-affiliations {
   display: flex;
+  height: 46px;
   gap: .5rem;
   align-items: center;
   justify-content: center;
 }
 
+.profile-summary-column .score {
+  display: grid;
+  height: 46px;
+  place-items: center;
+  line-height: 1;
+}
+
 .profile-affiliations .ranking-affiliation-icon {
-  width: 34px;
-  height: 34px;
-  flex-basis: 34px;
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
 }
 
 .profile-main-avatar {
@@ -92,8 +114,21 @@
   padding-top: 1rem;
 }
 
-.profile-summary-details > div:first-child {
+.profile-summary-column:first-child {
   border-right: 1px solid #dbe3ef;
+}
+
+.profile-summary-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-hero .profile-summary-details .game-kicker {
+  margin: 0;
+  padding-bottom: .5rem;
+  line-height: 1;
 }
 
 @media (max-width: 680px) {
