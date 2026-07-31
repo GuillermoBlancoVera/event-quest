@@ -46,3 +46,15 @@
 .profile-ranking .profile-ranking-item {
   padding: .75rem;
 }
+
+.profile-affiliations {
+  display: flex;
+  gap: .5rem;
+  margin-top: .45rem;
+}
+
+.profile-affiliations .ranking-affiliation-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}

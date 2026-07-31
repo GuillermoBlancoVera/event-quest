@@ -33,6 +33,7 @@ module "lambda" {
     CHALLENGES_TABLE = module.dynamodb.challenges_table
     SETTINGS_TABLE   = module.dynamodb.settings_table
     AUDIT_TABLE      = module.dynamodb.audit_table
+    AFFILIATIONS_TABLE = module.dynamodb.affiliations_table
   }
   tags = local.tags
 }

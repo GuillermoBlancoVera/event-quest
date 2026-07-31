@@ -1,0 +1,56 @@
+.affiliation-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.affiliation-avatar {
+  width: 112px;
+  height: 112px;
+  flex: 0 0 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--sage) 16%, transparent);
+}
+
+.affiliation-story {
+  margin: .25rem 0;
+  font-size: 1.1rem;
+}
+
+.affiliation-score {
+  margin: .4rem 0 0;
+  color: var(--sage);
+  font-weight: 700;
+}
+
+.affiliation-participants {
+  max-width: none;
+  padding: 0;
+  list-style: none;
+}
+
+.affiliation-participants li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: .6rem 0;
+  padding: 1rem;
+  background: #fffaf18c;
+  border-radius: 3px;
+  box-shadow: 0 4px 14px #6b4d2d12;
+}
+
+.affiliation-participants span {
+  flex: 1;
+}
+
+.affiliation-participants strong {
+  color: var(--sage);
+}
+
+@media (max-width: 700px) {
+  .affiliation-card { align-items: flex-start; }
+  .affiliation-avatar { width: 76px; height: 76px; flex-basis: 76px; }
+}

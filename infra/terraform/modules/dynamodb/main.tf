@@ -65,15 +65,33 @@ resource "aws_dynamodb_table" "audit" {
   tags = var.tags
 }
 
+resource "aws_dynamodb_table" "affiliations" {
+  name         = "${var.prefix}-affiliations"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+  tags = var.tags
+}
+
 output "users_table" { value = aws_dynamodb_table.users.name }
 output "challenges_table" { value = aws_dynamodb_table.challenges.name }
 output "settings_table" { value = aws_dynamodb_table.settings.name }
 output "audit_table" { value = aws_dynamodb_table.audit.name }
+output "affiliations_table" { value = aws_dynamodb_table.affiliations.name }
 output "table_arns" {
   value = [
     aws_dynamodb_table.users.arn,
     aws_dynamodb_table.challenges.arn,
     aws_dynamodb_table.settings.arn,
     aws_dynamodb_table.audit.arn,
+    aws_dynamodb_table.affiliations.arn,
   ]
 }

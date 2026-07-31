@@ -23,18 +23,21 @@ resource "aws_s3_bucket_public_access_block" "assets" {
   restrict_public_buckets = false
 }
 
-resource "aws_s3_bucket_policy" "assets_public_avatars" {
+resource "aws_s3_bucket_policy" "assets_public_images" {
   bucket     = aws_s3_bucket.assets.id
   depends_on = [aws_s3_bucket_public_access_block.assets]
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid       = "PublicReadAvatarsOnly"
+      Sid       = "PublicReadGameImages"
       Effect    = "Allow"
       Principal = "*"
       Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.assets.arn}/avatars/*"
+      Resource  = [
+        "${aws_s3_bucket.assets.arn}/avatars/*",
+        "${aws_s3_bucket.assets.arn}/affiliations/*",
+      ]
     }]
   })
 }
@@ -45,4 +48,8 @@ output "assets_bucket" {
 
 output "assets_avatar_base_url" {
   value = "https://${aws_s3_bucket.assets.bucket}.s3.${var.aws_region}.amazonaws.com/avatars"
+}
+
+output "assets_affiliation_base_url" {
+  value = "https://${aws_s3_bucket.assets.bucket}.s3.${var.aws_region}.amazonaws.com/affiliations"
 }
