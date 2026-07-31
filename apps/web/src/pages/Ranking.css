@@ -27,6 +27,7 @@
   min-width: 0;
   overflow: hidden;
   padding: .65rem .55rem;
+  background: #fff;
 }
 
 .ranking-affiliations {
@@ -55,6 +56,22 @@
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--sage);
+}
+
+.affiliation-ranking li {
+  grid-template-columns: 1.7rem 42px minmax(0, 1fr) 3ch;
+}
+
+.affiliation-ranking .ranking-affiliation-icon {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+}
+
+.affiliation-ranking li > span small {
+  display: block;
+  color: #63728a;
+  font-size: .72rem;
 }
 
 .ranking-affiliation-icon svg {
