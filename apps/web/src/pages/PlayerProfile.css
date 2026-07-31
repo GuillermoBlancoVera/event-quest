@@ -3,6 +3,14 @@
   gap: .75rem;
 }
 
+.profile-content {
+  margin-top: 1.25rem;
+}
+
+.profile-content .profile-tabs {
+  margin: 0 0 1rem;
+}
+
 .profile-list li,
 .profile-ranking .profile-ranking-item {
   margin: 0;
@@ -44,13 +52,14 @@
 }
 
 .profile-ranking .profile-ranking-item {
-  padding: .5rem .45rem;
+  padding: .75rem;
 }
 
 .profile-affiliations {
   display: flex;
   gap: .5rem;
-  margin-top: .45rem;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-affiliations .ranking-affiliation-icon {
@@ -59,20 +68,34 @@
   flex-basis: 34px;
 }
 
+.profile-main-avatar {
+  width: 150px;
+  height: 150px;
+  font-size: 3.1rem;
+}
+
+.profile-name {
+  max-width: 100%;
+  margin: 1rem 0 1.25rem;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-summary-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  align-items: center;
+  border-top: 1px solid #dbe3ef;
+  padding-top: 1rem;
+}
+
+.profile-summary-details > div:first-child {
+  border-right: 1px solid #dbe3ef;
+}
+
 @media (max-width: 680px) {
-  .profile-id {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .profile-id > div:last-child {
-    min-width: 0;
-    flex: 1;
-  }
-
-  .profile-id h1 {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  .profile-main-avatar { width: 132px; height: 132px; }
 }

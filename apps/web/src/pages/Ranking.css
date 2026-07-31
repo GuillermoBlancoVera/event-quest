@@ -35,6 +35,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #172235;
 }
 
 .ranking li > .ranking-position {
