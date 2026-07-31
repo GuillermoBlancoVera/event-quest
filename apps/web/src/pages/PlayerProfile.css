@@ -118,6 +118,23 @@
   border-right: 1px solid #dbe3ef;
 }
 
+.profile-summary-column:nth-child(2) {
+  border-bottom: 1px solid #dbe3ef;
+}
+
+.profile-summary-column:nth-child(3) {
+  border-right: 1px solid #dbe3ef;
+}
+
+.profile-summary-column:nth-child(-n + 2) {
+  border-bottom: 1px solid #dbe3ef;
+  padding-bottom: 1rem;
+}
+
+.profile-summary-column:nth-child(n + 3) {
+  padding-top: 1rem;
+}
+
 .profile-summary-column {
   display: flex;
   min-width: 0;
@@ -129,6 +146,43 @@
   margin: 0;
   padding-bottom: .5rem;
   line-height: 1;
+}
+
+.profile-ranking-value {
+  display: grid;
+  height: 46px;
+  place-items: center;
+  color: var(--sage);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.profile-progress-circle {
+  display: grid;
+  position: relative;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--sage) var(--progress), #dbe3ef 0);
+  color: #172235;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.profile-progress-circle::before {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: inherit;
+  background: #f6f8fc;
+  content: '';
+}
+
+.profile-progress-circle span {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 680px) {
