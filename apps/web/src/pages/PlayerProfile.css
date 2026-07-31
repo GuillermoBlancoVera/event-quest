@@ -142,6 +142,16 @@
   align-items: center;
 }
 
+.profile-summary-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.profile-summary-link:hover {
+  background: #e9eff8;
+}
+
 .profile-hero .profile-summary-details .game-kicker {
   margin: 0;
   padding-bottom: .5rem;
