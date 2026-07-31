@@ -16,8 +16,8 @@ export function PlayerChallenges() {
   }, [id]);
 
   if (!id) return <Navigate to="/juego" replace />;
-  if (error) return <Page title="Retos"><p className="notice">{error}</p></Page>;
-  if (!profile) return <Page title="Retos"><p>Preparando tus retos…</p></Page>;
+  if (error) return <Page top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><p className="notice">{error}</p></Page>;
+  if (!profile) return <Page top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><p>Preparando tus retos…</p></Page>;
 
-  return <Page eyebrow="Tu aventura" title="Retos">{profile.history.length ? <ul className="challenge-history profile-list">{profile.history.map(item => { const points = item.awardedPoints; const tone = points > 0 ? 'positive' : points < 0 ? 'negative' : 'zero'; return <li key={item.challengeId}><Link className="profile-challenge-link" to={`/juego/reto/${item.challengeId}`}><span>{item.title}</span><strong className={`challenge-points ${tone}`}>{points > 0 ? `+${points}` : points}</strong></Link></li>; })}</ul> : <p>Aún no has jugado retos. El primer QR te está esperando.</p>}</Page>;
+  return <Page eyebrow="Retos" top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}>{profile.history.length ? <ul className="challenge-history profile-list">{profile.history.map(item => { const points = item.awardedPoints; const tone = points > 0 ? 'positive' : points < 0 ? 'negative' : 'zero'; return <li key={item.challengeId}><Link className="profile-challenge-link" to={`/juego/reto/${item.challengeId}`}><span>{item.title}</span><strong className={`challenge-points ${tone}`}>{points > 0 ? `+${points}` : points}</strong></Link></li>; })}</ul> : <p>Aún no has jugado retos. El primer QR te está esperando.</p>}</Page>;
 }

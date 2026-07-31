@@ -12,6 +12,17 @@
   color: #fff;
 }
 
+.game-back-link {
+  display: inline-block;
+  color: #eff5ff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.game-back-link:hover {
+  color: #f6c86b;
+}
+
 .ranking-affiliation-icon {
   display: grid;
   flex: 0 0 30px;
