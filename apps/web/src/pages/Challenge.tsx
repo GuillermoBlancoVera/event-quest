@@ -34,7 +34,7 @@ export function Challenge() {
       .catch(error => setMessage(error instanceof Error ? error.message : 'No se ha podido cargar el reto.'));
   }, [challengeId, fromChallenges, userId]);
 
-  if (!userId) return <Navigate to="/juego" replace />;
+  if (!userId) return <Navigate to="/juego" replace state={{ returnTo: `${location.pathname}${location.search}` }} />;
 
   const resultMessage = attempt && (attempt.correct
     ? `Ya has jugado a este reto y has acertado. Has conseguido ${attempt.awardedPoints} puntos.`
