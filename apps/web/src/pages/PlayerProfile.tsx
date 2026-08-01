@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import type { PlayerProfile as PlayerProfileType, RankingResponse, Stats } from '@event-quest/shared';
 import { api } from '../lib/api';
 import { RankingAffiliationIcon } from './Ranking';
+import { PageLoader } from '../components/PageLoader';
 import './PlayerProfile.css';
 
 export function PlayerProfile() {
@@ -27,7 +28,7 @@ export function PlayerProfile() {
 
   if (!id) return <Navigate to="/juego" replace />;
   if (error) return <section className="game-panel"><p>{error}</p></section>;
-  if (!profile) return <section className="game-panel"><p>Preparando tu perfil…</p></section>;
+  if (!profile) return <PageLoader label="Cargando perfil" />;
 
   const avatarUrl = profile.avatarKey ? `https://event-quest-production-assets-372212891039.s3.eu-west-1.amazonaws.com/${profile.avatarKey}` : undefined;
   const playerRanking = ranking?.entries.find(entry => entry.userId === profile.userId);

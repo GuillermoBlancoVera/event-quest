@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import type { ChallengeListItem, PlayerProfile } from '@event-quest/shared';
 import { Page } from '../components/Page';
+import { PageLoader } from '../components/PageLoader';
 import { api } from '../lib/api';
 import './PlayerProfile.css';
 
@@ -18,7 +19,7 @@ export function PlayerChallenges() {
 
   if (!id) return <Navigate to="/juego" replace />;
   if (error) return <Page top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><p className="notice">{error}</p></Page>;
-  if (!profile || !challenges) return <Page top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><p>Preparando tus retos…</p></Page>;
+  if (!profile || !challenges) return <PageLoader label="Cargando retos" />;
 
   const attempts = new Map(profile.history.map(item => [item.challengeId, item]));
 
