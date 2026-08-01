@@ -28,6 +28,7 @@
   place-items: center;
   border-radius: 50%;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ranking li > strong {

@@ -150,10 +150,11 @@
   color: inherit;
   text-decoration: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.profile-summary-link:hover {
-  background: #e9eff8;
+.profile-affiliations .ranking-affiliation-icon {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .profile-logout {
