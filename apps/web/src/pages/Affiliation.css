@@ -100,12 +100,26 @@
   text-align: right;
 }
 
-.affiliation-participant-identity span {
+.affiliation-participant-identity > div {
+  min-width: 0;
+}
+
+.affiliation-participant-identity span,
+.affiliation-participant-identity small {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.affiliation-participant-identity span {
   color: #172235;
+}
+
+.affiliation-participant-identity small {
+  color: #63728a;
+  font-size: .72rem;
 }
 
 .affiliation-participants strong {

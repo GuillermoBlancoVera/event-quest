@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { Affiliation, RankingEntry, RankingResponse, RankingScope } from '@event-quest/shared';
+import type { Affiliation, RankingEntry, RankingResponse, RankingScope, Stats } from '@event-quest/shared';
 import { api } from '../lib/api';
 import { Page } from '../components/Page';
 
@@ -42,9 +42,10 @@ function getAffiliationRanking(data: RankingResponse, level: 'community' | 'cabi
 
 export function Ranking() {
   const [data, setData] = useState<RankingResponse>();
+  const [stats, setStats] = useState<Stats>();
   const [scope, setScope] = useState<RankingScope>('global');
   const [error, setError] = useState('');
-  useEffect(() => { const load = () => api.getRanking().then(setData).catch(error => setError(error.message)); load(); const id = setInterval(load, 10000); return () => clearInterval(id); }, []);
+  useEffect(() => { const load = () => Promise.all([api.getRanking(), api.getStats()]).then(([ranking, stats]) => { setData(ranking); setStats(stats); }).catch(error => setError(error.message)); load(); const id = setInterval(load, 10000); return () => clearInterval(id); }, []);
   const affiliationRanking = data && scope !== 'global' ? getAffiliationRanking(data, scope === 'team' ? 'community' : 'cabin') : [];
-  return <Page eyebrow="Clasificación en directo" top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><div className="tabs">{(['global', 'team', 'group'] as RankingScope[]).map(item => <button className={item === scope ? 'active' : ''} onClick={() => setScope(item)} key={item}>{labels[item]}</button>)}</div>{error ? <p className="notice">{error}</p> : !data ? <p>Reuniendo puntuaciones…</p> : scope === 'global' ? <ol className="ranking">{data.entries.map(entry => <li key={entry.userId}><b className="ranking-position">{entry.rank}</b><RankingAvatar entry={entry} /><span>{entry.name}</span><RankingAffiliationIcons entry={entry} /><strong>{entry.score}</strong></li>)}</ol> : <ol className="ranking affiliation-ranking">{affiliationRanking.map(({ affiliation, score, participants }, index) => <li key={affiliation.affiliationId}><b className="ranking-position">{index + 1}</b><RankingAffiliationIcon name={affiliation.name} iconKey={affiliation.avatarKey} to={`/juego/afiliacion/${affiliation.affiliationId}`} /><span>{affiliation.name}<small>{participants} {participants === 1 ? 'participante' : 'participantes'}</small></span><strong>{score}</strong></li>)}</ol>}{data?.frozen && <p className="notice">La clasificación se ha congelado con cariño.</p>}</Page>;
+  return <Page eyebrow="Clasificación en directo" top={<Link className="game-back-link" to="/juego/perfil">← Mi perfil</Link>}><div className="tabs">{(['global', 'team', 'group'] as RankingScope[]).map(item => <button className={item === scope ? 'active' : ''} onClick={() => setScope(item)} key={item}>{labels[item]}</button>)}</div>{error ? <p className="notice">{error}</p> : !data ? <p>Reuniendo puntuaciones…</p> : scope === 'global' ? <ol className="ranking">{data.entries.map(entry => <li key={entry.userId}><b className="ranking-position">{entry.rank}</b><RankingAvatar entry={entry} /><span>{entry.name}<small>{entry.attempted}/{stats?.challenges ?? '—'} retos</small></span><RankingAffiliationIcons entry={entry} /><strong>{entry.score}</strong></li>)}</ol> : <ol className="ranking affiliation-ranking">{affiliationRanking.map(({ affiliation, score, participants }, index) => <li key={affiliation.affiliationId}><b className="ranking-position">{index + 1}</b><RankingAffiliationIcon name={affiliation.name} iconKey={affiliation.avatarKey} to={`/juego/afiliacion/${affiliation.affiliationId}`} /><span>{affiliation.name}<small>{participants} {participants === 1 ? 'participante' : 'participantes'}</small></span><strong>{score}</strong></li>)}</ol>}{data?.frozen && <p className="notice">La clasificación se ha congelado con cariño.</p>}</Page>;
 }

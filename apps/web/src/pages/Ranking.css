@@ -64,6 +64,12 @@
   color: #172235;
 }
 
+.ranking li > span small {
+  display: block;
+  color: #63728a;
+  font-size: .72rem;
+}
+
 .ranking li > .ranking-position {
   width: 100%;
   margin: 0;

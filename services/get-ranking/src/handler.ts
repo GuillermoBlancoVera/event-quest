@@ -40,7 +40,8 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
   const entries = users.filter(user => !filter || user[scope as 'team' | 'group'] === filter).sort((a, b) => b.score - a.score || a.updatedAt.localeCompare(b.updatedAt)).map((user, index): RankingEntry => {
     const affiliation = user.affiliationId ? profilesById.get(user.affiliationId) : undefined;
     const parentAffiliation = affiliation?.parentAffiliationId ? profilesById.get(affiliation.parentAffiliationId) : undefined;
-    return { rank: index + 1, userId: user.userId, name: user.name, team: user.team, group: user.group, score: user.score, completed: user.completedChallenges.length, avatarKey: user.avatarKey, affiliation, parentAffiliation, lastActivityAt: user.updatedAt };
+    const attempted = new Set([...(user.attemptedChallengeIds ?? []), ...(user.challengeAttempts?.map(attempt => attempt.challengeId) ?? []), ...(user.completedChallenges ?? [])]).size;
+    return { rank: index + 1, userId: user.userId, name: user.name, team: user.team, group: user.group, score: user.score, completed: user.completedChallenges.length, attempted, avatarKey: user.avatarKey, affiliation, parentAffiliation, lastActivityAt: user.updatedAt };
   });
   return reply(200, { scope, entries, affiliationScores: Object.fromEntries(scoreByAffiliation), frozen: Boolean((settingsResult.Item as Settings | undefined)?.rankingFrozenAt) });
 };
