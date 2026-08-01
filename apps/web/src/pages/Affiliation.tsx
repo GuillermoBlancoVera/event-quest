@@ -15,7 +15,7 @@ export function Affiliation() {
   const [error, setError] = useState('');
   useEffect(() => { api.getRanking().then(setRanking).catch(error => setError(error.message)); }, []);
   const affiliation = useMemo<AffiliationType | undefined>(() => ranking?.entries.flatMap(entry => [entry.parentAffiliation, entry.affiliation]).find(item => item?.affiliationId === id), [id, ranking]);
-  const participants = useMemo(() => ranking?.entries.filter(entry => (entry.parentAffiliation ?? entry.affiliation)?.affiliationId === id) ?? [], [id, ranking]);
+  const participants = useMemo(() => ranking?.entries.filter(entry => entry.affiliation?.affiliationId === id || entry.parentAffiliation?.affiliationId === id) ?? [], [id, ranking]);
   const cabins = useMemo(() => {
     const affiliations = ranking?.entries.map(entry => entry.affiliation).filter((affiliation): affiliation is AffiliationType => Boolean(affiliation?.parentAffiliationId === id)) ?? [];
     return affiliations.filter((affiliation, index) => affiliations.findIndex(item => item.affiliationId === affiliation.affiliationId) === index);

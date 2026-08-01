@@ -17,7 +17,6 @@ export function Challenge() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [submission, setSubmission] = useState<ChallengeAttempt>();
-  const [showResult, setShowResult] = useState(false);
   const fromChallenges = Boolean(location.state?.fromChallenges);
 
   useEffect(() => {
@@ -28,9 +27,12 @@ export function Challenge() {
         const recordedAttempt = profile.history.find(item => item.challengeId === challengeId);
         setAttempt(recordedAttempt);
         setAnswer(recordedAttempt?.answer ?? '');
+        if (recordedAttempt && !fromChallenges) {
+          setSubmission(recordedAttempt);
+        }
       })
       .catch(error => setMessage(error instanceof Error ? error.message : 'No se ha podido cargar el reto.'));
-  }, [challengeId, userId]);
+  }, [challengeId, fromChallenges, userId]);
 
   if (!userId) return <Navigate to="/juego" replace />;
 
@@ -51,7 +53,6 @@ export function Challenge() {
       const result = await api.submitAnswer(challengeId, { userId, answer });
       setAttempt(result.attempt);
       setSubmission(result.attempt);
-      setShowResult(!fromChallenges);
       setQuestion(await api.getQuestion(challengeId, userId));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido enviar la respuesta.');
@@ -60,5 +61,5 @@ export function Challenge() {
     }
   };
 
-  return <Page eyebrow={question?.title ?? 'Cargando reto'} top={fromChallenges ? <Link className="game-back-link" to="/juego/retos">← Retos</Link> : undefined}>{!question ? <p>{message || 'Desvelando la pista…'}</p> : <><p className="lead">{question.question}</p>{(message || (fromChallenges && resultMessage)) && <p className="notice">{message || resultMessage}</p>}<div className="answers">{question.answers.map(item => { const correct = Boolean(answered && question.correctAnswer === item); const incorrect = Boolean(answered && !attempt?.correct && attempt?.answer === item); const state = correct ? 'selected answer-correct' : incorrect ? 'selected answer-incorrect' : answer === item && !answered ? 'selected' : ''; return <button className={state} disabled={answered} onClick={() => setAnswer(item)} key={item}>{item}</button>; })}</div>{(!answered || submission) && <button className="button" disabled={(!answer && !answered) || busy} onClick={submit}>{busy ? 'Enviando…' : answered ? 'Ir a mi perfil' : 'Enviar respuesta'}</button>}{showResult && submission && <div className={`challenge-result-modal ${submission.correct ? 'correct' : 'incorrect'}`} role="dialog" aria-modal="true" aria-label="Resultado del reto"><div className="challenge-result-content"><button className="challenge-result-close" onClick={() => setShowResult(false)} aria-label="Cerrar resultado">×</button><p>{submission.correct ? '¡Has acertado!' : 'Esta vez no era la respuesta correcta.'}</p><strong>{submission.correct ? `+${submission.awardedPoints} puntos` : '0 puntos'}</strong><button className="button" onClick={() => setShowResult(false)}>Ver reto</button></div></div>}</>}</Page>;
+  return <Page eyebrow={question?.title ?? 'Cargando reto'} top={fromChallenges ? <Link className="game-back-link" to="/juego/retos">← Retos</Link> : undefined}>{!question ? <p>{message || 'Desvelando la pista…'}</p> : <><p className="lead">{question.question}</p>{(message || resultMessage) && <p className="notice">{message || resultMessage}</p>}<div className="answers">{question.answers.map(item => { const correct = Boolean(answered && question.correctAnswer === item); const incorrect = Boolean(answered && !attempt?.correct && attempt?.answer === item); const state = correct ? 'selected answer-correct' : incorrect ? 'selected answer-incorrect' : answer === item && !answered ? 'selected' : ''; return <button className={state} disabled={answered} onClick={() => setAnswer(item)} key={item}>{item}</button>; })}</div>{(!answered || submission) && <button className="button" disabled={(!answer && !answered) || busy} onClick={submit}>{busy ? 'Enviando…' : answered ? 'Ir a mi perfil' : 'Enviar respuesta'}</button>}</>}</Page>;
 }
