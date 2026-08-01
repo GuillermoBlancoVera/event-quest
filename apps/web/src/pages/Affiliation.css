@@ -1,28 +1,62 @@
+.affiliation-back-link {
+  display: inline-block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #eff5ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .affiliation-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   margin-bottom: 2rem;
+  text-align: center;
 }
 
 .affiliation-avatar {
-  width: 112px;
-  height: 112px;
-  flex: 0 0 112px;
+  width: 152px;
+  height: 152px;
+  flex: 0 0 152px;
   border-radius: 50%;
   object-fit: cover;
-  background: color-mix(in srgb, var(--sage) 16%, transparent);
 }
 
 .affiliation-story {
   margin: .25rem 0;
   font-size: 1.1rem;
+  max-width: 620px;
 }
 
 .affiliation-score {
   margin: .4rem 0 0;
   color: var(--sage);
   font-weight: 700;
+}
+
+.affiliation-cabins {
+  margin: 0 0 2rem;
+  text-align: center;
+}
+
+.affiliation-cabins h2 {
+  margin-bottom: .75rem;
+}
+
+.affiliation-cabins > div {
+  display: flex;
+  justify-content: center;
+  gap: .75rem;
+}
+
+.affiliation-cabins .ranking-affiliation-icon {
+  width: 64px;
+  height: 64px;
+  flex-basis: 64px;
 }
 
 .affiliation-participants {
@@ -34,16 +68,44 @@
 .affiliation-participants li {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: .45rem;
   margin: .6rem 0;
-  padding: 1rem;
-  background: #fffaf18c;
-  border-radius: 3px;
-  box-shadow: 0 4px 14px #6b4d2d12;
+  min-height: 66px;
+  padding: .65rem .55rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px #1722350d;
 }
 
-.affiliation-participants span {
+.affiliation-participant-identity,
+.affiliation-participant-summary {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.affiliation-participant-identity {
+  min-width: 0;
   flex: 1;
+}
+
+.affiliation-participant-summary {
+  flex: 0 0 auto;
+}
+
+.affiliation-participant-summary strong {
+  width: 3ch;
+  text-align: right;
+}
+
+.affiliation-participant-identity span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #172235;
 }
 
 .affiliation-participants strong {
@@ -51,6 +113,5 @@
 }
 
 @media (max-width: 700px) {
-  .affiliation-card { align-items: flex-start; }
-  .affiliation-avatar { width: 76px; height: 76px; flex-basis: 76px; }
+  .affiliation-avatar { width: 132px; height: 132px; flex-basis: 132px; }
 }
