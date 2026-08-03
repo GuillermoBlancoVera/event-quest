@@ -5,6 +5,7 @@ import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+const score = (user: User) => (user.challengeAttempts ?? []).reduce((total, attempt) => total + attempt.awardedPoints, 0);
 const loadProfiles = async (ids: string[]) => {
   const results: Affiliation[] = [];
   for (let index = 0; index < ids.length; index += 100) {
@@ -33,15 +34,17 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     let affiliationId = user.affiliationId;
     while (affiliationId && !visited.has(affiliationId)) {
       visited.add(affiliationId);
-      scoreByAffiliation.set(affiliationId, (scoreByAffiliation.get(affiliationId) ?? 0) + user.score);
+      scoreByAffiliation.set(affiliationId, (scoreByAffiliation.get(affiliationId) ?? 0) + score(user));
       affiliationId = profilesById.get(affiliationId)?.parentAffiliationId;
     }
   }
-  const entries = users.filter(user => !filter || user[scope as 'team' | 'group'] === filter).sort((a, b) => b.score - a.score || a.updatedAt.localeCompare(b.updatedAt)).map((user, index): RankingEntry => {
+  const entries = users.filter(user => !filter || user[scope as 'team' | 'group'] === filter).sort((a, b) => score(b) - score(a) || a.updatedAt.localeCompare(b.updatedAt)).map((user, index): RankingEntry => {
     const affiliation = user.affiliationId ? profilesById.get(user.affiliationId) : undefined;
     const parentAffiliation = affiliation?.parentAffiliationId ? profilesById.get(affiliation.parentAffiliationId) : undefined;
-    const attempted = new Set([...(user.attemptedChallengeIds ?? []), ...(user.challengeAttempts?.map(attempt => attempt.challengeId) ?? []), ...(user.completedChallenges ?? [])]).size;
-    return { rank: index + 1, userId: user.userId, name: user.name, gender: user.gender, team: user.team, group: user.group, score: user.score, completed: user.completedChallenges.length, attempted, avatarKey: user.avatarKey, affiliation, parentAffiliation, lastActivityAt: user.updatedAt };
+    const attempts = user.challengeAttempts ?? [];
+    const attempted = new Set(attempts.map(attempt => attempt.challengeId)).size;
+    const completed = new Set(attempts.filter(attempt => attempt.correct).map(attempt => attempt.challengeId)).size;
+    return { rank: index + 1, userId: user.userId, name: user.name, gender: user.gender, team: user.team, group: user.group, score: score(user), completed, attempted, avatarKey: user.avatarKey, affiliation, parentAffiliation, lastActivityAt: user.updatedAt };
   });
   return reply(200, { scope, entries, affiliationScores: Object.fromEntries(scoreByAffiliation), frozen: Boolean((settingsResult.Item as Settings | undefined)?.rankingFrozenAt) });
 };

@@ -22,7 +22,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
   const userId = event.queryStringParameters?.userId;
   const userResult = userId ? await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${userId}`, SK: 'PROFILE' } })) : undefined;
   const user = userResult?.Item as User | undefined;
-  const hasAttempted = Boolean(user && [...(user.attemptedChallengeIds ?? []), ...(user.challengeAttempts?.map(attempt => attempt.challengeId) ?? []), ...(user.completedChallenges ?? [])].includes(id));
+  const hasAttempted = Boolean(user?.challengeAttempts?.some(attempt => attempt.challengeId === id));
   const { correctAnswer, ...question } = challenge;
   return reply(200, hasAttempted ? { ...question, correctAnswer } : question);
 };
