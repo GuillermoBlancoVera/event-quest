@@ -41,5 +41,5 @@ export function PorLaCara() {
   const points = attempt?.awardedPoints ?? challenge.points;
   const pointsClass = points < 0 ? 'negative' : 'positive';
 
-  return <Page eyebrow={`por la cara · ${challenge.title}`} top={fromChallenges ? <Link className="game-back-link" to="/juego/retos">← retos</Link> : undefined}><section className="por-la-cara-detail"><p>{challenge.description}</p><strong className={pointsClass}>{points > 0 ? `+${points}` : points} puntos</strong>{message && <p className="notice">{message}</p>}{attempt && <Link className="button" to="/juego/perfil">ir a mi perfil</Link>}</section></Page>;
+  return <Page eyebrow={`por la cara · ${challenge.title}`} top={fromChallenges ? <Link className="game-back-link" to="/juego/retos">← retos</Link> : undefined}><section className="por-la-cara-detail"><p>{challenge.description}</p><strong className={pointsClass}>{points > 0 ? `+${points}` : points} puntos</strong>{message && <p className="notice">{message}</p>}{attempt && !fromChallenges && <Link className="button" to="/juego/perfil">ir a mi perfil</Link>}</section></Page>;
 }
