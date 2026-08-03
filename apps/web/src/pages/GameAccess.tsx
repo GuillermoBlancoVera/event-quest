@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 
 export function GameAccess() {
@@ -8,9 +8,11 @@ export function GameAccess() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
+  const returnTo = typeof location.state?.returnTo === 'string' && location.state.returnTo.startsWith('/juego/') ? location.state.returnTo : '/juego/perfil';
 
-  if (existing) return <Navigate to="/juego/perfil" replace />;
+  if (existing) return <Navigate to={returnTo} replace />;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -19,7 +21,7 @@ export function GameAccess() {
     try {
       const user = await api.login({ name, password });
       localStorage.setItem('event-quest-user', user.userId);
-      navigate('/juego/perfil');
+      navigate(returnTo, { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido iniciar sesión.');
     } finally {

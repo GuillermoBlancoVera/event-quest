@@ -1,0 +1,91 @@
+.community-challenge-progress {
+  margin: 1.25rem 0 2rem;
+  color: #f6c86b;
+  font-weight: 800;
+}
+
+.community-scan-list {
+  margin: 2rem 0;
+}
+
+.community-scan-list h2 {
+  color: #eff5ff;
+}
+
+.community-scan-list article {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 64px;
+  margin: .65rem 0;
+  padding: .65rem;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #172235;
+}
+
+.community-scan-list article .ranking-affiliation-icon,
+.community-scan-placeholder {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.community-scan-placeholder {
+  background: #dbe3ef;
+  color: #63728a;
+  font-weight: 800;
+}
+
+.community-scan-list article strong,
+.community-scan-list article small {
+  display: block;
+}
+
+.community-scan-list article small {
+  color: #63728a;
+}
+
+.community-scan-missing article {
+  opacity: .48;
+}
+
+.community-scan-result {
+  display: grid;
+  justify-items: center;
+  gap: .6rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.community-scan-result p {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.community-scan-result strong {
+  color: #f6c86b;
+  font-size: 1.5rem;
+}
+
+.community-scan-result small {
+  color: #d9e7ff;
+}
+
+.community-scan-player {
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #dbe3ef;
+}
+
+.community-scan-player img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -1,0 +1,23 @@
+.por-la-cara-detail {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.por-la-cara-detail h1,
+.por-la-cara-detail p {
+  margin: 0;
+}
+
+.por-la-cara-detail > strong {
+  font-size: 2rem;
+}
+
+.por-la-cara-detail > strong.positive {
+  color: #f6c86b;
+}
+
+.por-la-cara-detail > strong.negative {
+  color: #d94b4b;
+}

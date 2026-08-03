@@ -20,6 +20,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.3)
+      qrcode.react:
+        specifier: ^4.2.0
+        version: 4.2.0(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -214,6 +217,28 @@ importers:
         specifier: ^3.0.7
         version: 3.2.7(jsdom@25.0.1)
 
+  services/por-la-cara:
+    dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0(@aws-sdk/client-dynamodb@3.1090.0)
+      '@event-quest/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.147
+        version: 8.10.162
+      esbuild:
+        specifier: ^0.24.2
+        version: 0.24.2
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   services/register-user:
     dependencies:
       '@aws-sdk/client-dynamodb':
@@ -238,6 +263,28 @@ importers:
       vitest:
         specifier: ^3.0.7
         version: 3.2.7(jsdom@25.0.1)
+
+  services/scan-community:
+    dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0(@aws-sdk/client-dynamodb@3.1090.0)
+      '@event-quest/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.147
+        version: 8.10.162
+      esbuild:
+        specifier: ^0.24.2
+        version: 0.24.2
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
   services/submit-answer:
     dependencies:
@@ -1391,6 +1438,11 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  qrcode.react@4.2.0:
+    resolution: {integrity: sha512-QpgqWi8rD9DsS9EP3z7BT+5lY5SFhsqGjpgW5DY/i3mK4M9DTBNz3ErMi8BWYEfI3L0d8GIbGmcdFAS1uIRGjA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   react-dom@18.3.1:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
@@ -2745,6 +2797,10 @@ snapshots:
       react-is: 17.0.2
 
   punycode@2.3.1: {}
+
+  qrcode.react@4.2.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   react-dom@18.3.1(react@18.3.1):
     dependencies:

@@ -40,7 +40,9 @@ Copy the resulting `api_url` and add it as the `VITE_API_URL` repository variabl
 
 ## API
 
-`POST /register-user`, `GET /question/{id}`, `POST /submit-answer/{id}`, `GET /ranking`, `GET /stats`, plus admin endpoints for question enablement and ranking freeze state. Admin access should be protected with an API Gateway authorizer before public deployment.
+`POST /register-user`, `GET /question/{id}`, `POST /submit-answer/{id}`, `GET /ranking`, `GET /stats`, plus admin endpoints for question enablement, ranking freeze state and affiliations. Admin access should be protected with an API Gateway authorizer before public deployment.
+
+Create each container or child affiliation with `POST /admin/upsert-affiliation`: `{ "affiliationId": "gryffindor", "name": "Gryffindor", "parentAffiliationId": "harry-potter", "avatarKey": "affiliations/gryffindor.png", "story": "…" }`. Then use `POST /admin/assign-user-affiliation` to add participants. The affiliation profile is stored once with its avatar, story, score and member count; the bucket serves avatars from `affiliations/`.
 
 ## Repository commands
 

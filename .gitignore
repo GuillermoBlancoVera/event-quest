@@ -8,6 +8,8 @@ coverage
 apps/web/.env.local
 .tools/
 infra/terraform/tfplan*
+infra/terraform/*.tfplan
+services/*/*.zip
 /admin.zip
 /get-question.zip
 /get-ranking.zip
@@ -16,3 +18,5 @@ infra/terraform/tfplan*
 /submit-answer.zip
 /get-profile.zip
 /login.zip
+/scan-community.zip
+/por-la-cara.zip

@@ -5,7 +5,7 @@ locals {
     Environment = var.environment
     ManagedBy   = "Terraform"
   }
-  services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "get-ranking", "get-stats", "admin"])
+  services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "scan-community", "por-la-cara", "get-ranking", "get-stats", "admin"])
 }
 
 module "dynamodb" {
@@ -33,6 +33,7 @@ module "lambda" {
     CHALLENGES_TABLE = module.dynamodb.challenges_table
     SETTINGS_TABLE   = module.dynamodb.settings_table
     AUDIT_TABLE      = module.dynamodb.audit_table
+    AFFILIATIONS_TABLE = module.dynamodb.affiliations_table
   }
   tags = local.tags
 }

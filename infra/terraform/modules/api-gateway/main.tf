@@ -11,10 +11,18 @@ locals {
     "POST /register-user"      = "register-user"
     "POST /login"              = "login"
     "GET /profile/{id}"        = "get-profile"
+    "GET /challenges"          = "get-question"
     "GET /question/{id}"       = "get-question"
     "POST /submit-answer/{id}" = "submit-answer"
+    "POST /community-scan/{id}" = "scan-community"
+    "GET /por-la-cara"          = "por-la-cara"
+    "GET /por-la-cara/{id}"     = "por-la-cara"
+    "POST /por-la-cara/{id}"    = "por-la-cara"
     "GET /ranking"             = "get-ranking"
     "GET /stats"               = "get-stats"
+    "POST /admin/upsert-affiliation" = "admin"
+    "POST /admin/upsert-por-la-cara" = "admin"
+    "POST /admin/assign-user-affiliation" = "admin"
   }
 }
 
@@ -47,13 +55,11 @@ resource "aws_apigatewayv2_route" "this" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
-  for_each = {
-    for function_name in values(local.routes) : function_name => var.lambdas[function_name]
-  }
+  for_each = toset(values(local.routes))
 
-  statement_id  = "AllowApiGatewayInvoke-${each.key}"
+  statement_id  = "AllowApiGatewayInvoke-${each.value}"
   action        = "lambda:InvokeFunction"
-  function_name = each.value.function_name
+  function_name = var.lambdas[each.value].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
 }
