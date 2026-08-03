@@ -3,6 +3,34 @@
   gap: .75rem;
 }
 
+.challenge-list-progress {
+  margin: .5rem 0 1.25rem;
+}
+
+.challenge-list-progress > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: .45rem;
+  color: #eff5ff;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.challenge-list-progress i {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ffffff38;
+}
+
+.challenge-list-progress b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #f6c86b;
+}
+
 .profile-content {
   margin-top: 1.25rem;
 }

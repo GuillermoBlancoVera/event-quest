@@ -15,9 +15,13 @@ locals {
     "GET /question/{id}"       = "get-question"
     "POST /submit-answer/{id}" = "submit-answer"
     "POST /community-scan/{id}" = "scan-community"
+    "GET /por-la-cara"          = "por-la-cara"
+    "GET /por-la-cara/{id}"     = "por-la-cara"
+    "POST /por-la-cara/{id}"    = "por-la-cara"
     "GET /ranking"             = "get-ranking"
     "GET /stats"               = "get-stats"
     "POST /admin/upsert-affiliation" = "admin"
+    "POST /admin/upsert-por-la-cara" = "admin"
     "POST /admin/assign-user-affiliation" = "admin"
   }
 }

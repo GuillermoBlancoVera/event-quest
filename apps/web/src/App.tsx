@@ -10,6 +10,7 @@ import { GameAccess } from './pages/GameAccess';
 import { NotFound } from './pages/NotFound';
 import { PlayerProfile } from './pages/PlayerProfile';
 import { PlayerChallenges } from './pages/PlayerChallenges';
+import { PorLaCara } from './pages/PorLaCara';
 import { Ranking } from './pages/Ranking';
 import { Stats } from './pages/Stats';
 import { WeddingHome } from './pages/WeddingHome';
@@ -25,6 +26,7 @@ export function App() {
       <Route path="/juego/afiliacion/:id" element={<Affiliation/>}/>
       <Route path="/juego/estadisticas" element={<Stats/>}/>
       <Route path="/juego/reto/:id" element={<Challenge/>}/>
+      <Route path="/juego/por-la-cara/:id" element={<PorLaCara/>}/>
       <Route path="/juego/comunidades" element={<CommunityChallenge/>}/>
       <Route path="/juego/encuentro/:id" element={<CommunityScan/>}/>
     </Route>

@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
   const existing = await db.send(new ScanCommand({ TableName: process.env.USERS_TABLE, FilterExpression: 'entity = :entity AND #name = :name', ExpressionAttributeNames: { '#name': 'name' }, ExpressionAttributeValues: { ':entity': 'USER', ':name': name } }));
   if (existing.Items?.length) return json(409, { code: 'NAME_TAKEN', message: 'Ese nombre ya está registrado.' });
   const now = new Date().toISOString();
-  const user: User = { userId: crypto.randomUUID(), name, team: input.team?.trim().toLocaleLowerCase() || 'sin afiliación', group: input.group?.trim().toLocaleLowerCase() || 'sin afiliación', affiliationId: input.affiliationId?.trim(), challengeAttempts: [], communityScans: [], createdAt: now, updatedAt: now };
+  const user: User = { userId: crypto.randomUUID(), name, team: input.team?.trim().toLocaleLowerCase() || 'sin afiliación', group: input.group?.trim().toLocaleLowerCase() || 'sin afiliación', affiliationId: input.affiliationId?.trim(), challengeAttempts: [], communityScans: [], porLaCaraAttempts: [], createdAt: now, updatedAt: now };
   await db.send(new PutCommand({ TableName: process.env.USERS_TABLE, Item: { PK: `USER#${user.userId}`, SK: 'PROFILE', entity: 'USER', password, ...user } }));
   return json(201, user);
 };

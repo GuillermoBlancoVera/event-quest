@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
   if (event.requestContext.http.path === '/challenges') {
     const result = await db.send(new ScanCommand({ TableName: process.env.CHALLENGES_TABLE }));
     const challenges = (result.Items ?? []) as Challenge[];
-    const response: ChallengeListItem[] = challenges.filter(challenge => challenge.enabled).map(({ challengeId, title }) => ({ challengeId, title })).sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    const response: ChallengeListItem[] = challenges.filter(challenge => challenge.enabled && typeof challenge.challengeId === 'number').map(({ challengeId, title }) => ({ challengeId, title })).sort((a, b) => a.title.localeCompare(b.title, 'es'));
     return reply(200, response);
   }
 
