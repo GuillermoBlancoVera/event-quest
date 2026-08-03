@@ -35,9 +35,9 @@ export function PlayerProfile() {
 
   const avatarUrl = profile.avatarKey ? `https://event-quest-production-assets-372212891039.s3.eu-west-1.amazonaws.com/${profile.avatarKey}` : undefined;
   const playerRanking = ranking?.entries.find(entry => entry.userId === profile.userId);
-  const attemptedChallenges = new Set(profile.history.map(item => item.challengeId)).size;
+  const attemptedChallenges = new Set(profile.history.map(item => item.challengeId)).size + new Set((profile.communityScans ?? []).map(scan => scan.communityId)).size;
   const progressStyle = { '--progress': `${stats?.challenges ? attemptedChallenges / stats.challenges * 100 : 0}%` } as CSSProperties;
-  const qrValue = JSON.stringify({ userId: profile.userId, name: profile.name, affiliationId: profile.affiliationId, score: profile.score, attemptedChallenges });
+  const qrValue = `${window.location.origin}${window.location.pathname}#/juego/encuentro/${profile.userId}`;
 
   const logout = () => { localStorage.removeItem('event-quest-user'); navigate('/'); };
 

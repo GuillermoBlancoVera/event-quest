@@ -242,6 +242,28 @@ importers:
         specifier: ^3.0.7
         version: 3.2.7(jsdom@25.0.1)
 
+  services/scan-community:
+    dependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0
+      '@aws-sdk/lib-dynamodb':
+        specifier: ^3.750.0
+        version: 3.1090.0(@aws-sdk/client-dynamodb@3.1090.0)
+      '@event-quest/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.147
+        version: 8.10.162
+      esbuild:
+        specifier: ^0.24.2
+        version: 0.24.2
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   services/submit-answer:
     dependencies:
       '@aws-sdk/client-dynamodb':

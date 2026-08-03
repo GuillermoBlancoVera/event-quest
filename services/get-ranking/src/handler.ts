@@ -5,7 +5,7 @@ import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
-const score = (user: User) => (user.challengeAttempts ?? []).reduce((total, attempt) => total + attempt.awardedPoints, 0);
+const score = (user: User) => (user.challengeAttempts ?? []).reduce((total, attempt) => total + attempt.awardedPoints, 0) + (user.communityScans ?? []).reduce((total, scan) => total + scan.awardedPoints, 0);
 const loadProfiles = async (ids: string[]) => {
   const results: Affiliation[] = [];
   for (let index = 0; index < ids.length; index += 100) {
@@ -42,7 +42,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     const affiliation = user.affiliationId ? profilesById.get(user.affiliationId) : undefined;
     const parentAffiliation = affiliation?.parentAffiliationId ? profilesById.get(affiliation.parentAffiliationId) : undefined;
     const attempts = user.challengeAttempts ?? [];
-    const attempted = new Set(attempts.map(attempt => attempt.challengeId)).size;
+    const attempted = new Set(attempts.map(attempt => attempt.challengeId)).size + new Set((user.communityScans ?? []).map(scan => scan.communityId)).size;
     const completed = new Set(attempts.filter(attempt => attempt.correct).map(attempt => attempt.challengeId)).size;
     return { rank: index + 1, userId: user.userId, name: user.name, gender: user.gender, team: user.team, group: user.group, score: score(user), completed, attempted, avatarKey: user.avatarKey, affiliation, parentAffiliation, lastActivityAt: user.updatedAt };
   });

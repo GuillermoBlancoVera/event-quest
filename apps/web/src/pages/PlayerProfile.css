@@ -200,6 +200,29 @@
   text-align: right;
 }
 
+.community-challenge-card small {
+  display: block;
+  color: #63728a;
+  font-size: .72rem;
+}
+
+.community-challenge-card i {
+  display: block;
+  width: 100%;
+  height: 5px;
+  margin-top: .35rem;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #dbe3ef;
+}
+
+.community-challenge-card i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sage);
+}
+
 .profile-ranking {
   display: grid;
   gap: .75rem;

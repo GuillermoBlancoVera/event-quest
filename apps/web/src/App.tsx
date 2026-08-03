@@ -3,6 +3,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { GameLayout } from './components/GameLayout';
 import { Layout } from './components/Layout';
 import { Challenge } from './pages/Challenge';
+import { CommunityChallenge } from './pages/CommunityChallenge';
+import { CommunityScan } from './pages/CommunityScan';
 import { Affiliation } from './pages/Affiliation';
 import { GameAccess } from './pages/GameAccess';
 import { NotFound } from './pages/NotFound';
@@ -23,6 +25,8 @@ export function App() {
       <Route path="/juego/afiliacion/:id" element={<Affiliation/>}/>
       <Route path="/juego/estadisticas" element={<Stats/>}/>
       <Route path="/juego/reto/:id" element={<Challenge/>}/>
+      <Route path="/juego/comunidades" element={<CommunityChallenge/>}/>
+      <Route path="/juego/encuentro/:id" element={<CommunityScan/>}/>
     </Route>
     <Route path="*" element={<NotFound/>}/>
   </Routes></ErrorBoundary>;

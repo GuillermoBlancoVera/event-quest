@@ -14,6 +14,7 @@ locals {
     "GET /challenges"          = "get-question"
     "GET /question/{id}"       = "get-question"
     "POST /submit-answer/{id}" = "submit-answer"
+    "POST /community-scan/{id}" = "scan-community"
     "GET /ranking"             = "get-ranking"
     "GET /stats"               = "get-stats"
     "POST /admin/upsert-affiliation" = "admin"

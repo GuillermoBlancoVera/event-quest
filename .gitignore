@@ -18,3 +18,4 @@ services/*/*.zip
 /submit-answer.zip
 /get-profile.zip
 /login.zip
+/scan-community.zip
