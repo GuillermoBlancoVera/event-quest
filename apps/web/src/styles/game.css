@@ -1,3 +1,8 @@
 body::after {
   content: none;
 }
+
+.button,
+.button:hover {
+  box-shadow: none;
+}

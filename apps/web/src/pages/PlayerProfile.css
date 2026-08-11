@@ -112,6 +112,13 @@
   cursor: pointer;
 }
 
+.profile-qr-modal .button,
+.profile-qr-modal .button:hover,
+.locked-challenge-modal .button,
+.locked-challenge-modal .button:hover {
+  box-shadow: none;
+}
+
 .profile-content .profile-tabs {
   margin: 0 0 1rem;
 }

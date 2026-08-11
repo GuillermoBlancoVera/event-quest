@@ -70,3 +70,8 @@
   line-height: 1;
   cursor: pointer;
 }
+
+.challenge-result-modal .button,
+.challenge-result-modal .button:hover {
+  box-shadow: none;
+}
