@@ -7,7 +7,7 @@
 .page-loader span {
   width: 42px;
   height: 42px;
-  border: 4px solid #dbe3ef;
+  border: 4px solid var(--surface-muted);
   border-top-color: var(--sage);
   border-radius: 50%;
   animation: page-loader-spin .75s linear infinite;

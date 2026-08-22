@@ -5,17 +5,17 @@
 }
 
 .game-app .tabs button {
-  color: #eff5ff;
-  border-color: #aebdd3;
+  color: var(--game-foreground);
+  border-color: var(--game-foreground-muted);
 }
 
 .game-app .tabs .active {
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .game-back-link {
   display: inline-block;
-  color: #eff5ff;
+  color: var(--game-foreground);
   font-weight: 700;
   text-decoration: none;
 }
@@ -48,7 +48,7 @@
   min-height: var(--ranking-card-height);
   overflow: hidden;
   padding: .65rem .55rem;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ranking-affiliations {
@@ -64,12 +64,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #172235;
+  color: var(--ink-strong);
 }
 
 .ranking li > span small {
   display: block;
-  color: #63728a;
+  color: var(--ink-muted);
   font-size: .72rem;
 }
 
@@ -125,7 +125,7 @@
   display: block;
   min-width: 0;
   overflow: hidden;
-  color: #172235;
+  color: var(--ink-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -138,7 +138,7 @@
 
 .ranking-affiliation-card > span small {
   display: block;
-  color: #63728a;
+  color: var(--ink-muted);
   font-size: .72rem;
   line-height: 1.2;
 }

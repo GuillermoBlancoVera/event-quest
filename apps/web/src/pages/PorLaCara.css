@@ -15,9 +15,9 @@
 }
 
 .por-la-cara-detail > strong.positive {
-  color: #f6c86b;
+  color: var(--color-sun);
 }
 
 .por-la-cara-detail > strong.negative {
-  color: #d94b4b;
+  color: var(--danger);
 }

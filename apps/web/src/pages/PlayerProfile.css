@@ -11,7 +11,7 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: .45rem;
-  color: #eff5ff;
+  color: var(--game-foreground);
   font-size: .8rem;
   font-weight: 800;
 }
@@ -21,14 +21,14 @@
   height: 7px;
   overflow: hidden;
   border-radius: 99px;
-  background: #ffffff38;
+  background: color-mix(in srgb, var(--game-foreground) 22%, transparent);
 }
 
 .challenge-list-progress b {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #f6c86b;
+  background: var(--color-sun);
 }
 
 .profile-content {
@@ -52,10 +52,10 @@
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: #fff;
-  color: #172235;
+  background: var(--surface);
+  color: var(--ink-strong);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -73,7 +73,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: #101827b8;
+  background: var(--overlay);
 }
 
 .profile-qr-modal > div {
@@ -84,9 +84,9 @@
   gap: 1rem;
   padding: 2rem;
   border-radius: 16px;
-  background: #f6f8fc;
-  color: #172235;
-  box-shadow: 0 18px 50px #0006;
+  background: var(--surface);
+  color: var(--ink-strong);
+  box-shadow: 0 18px 50px var(--shadow);
 }
 
 .profile-qr-modal p {
@@ -124,21 +124,21 @@
 }
 
 .profile-content .profile-tabs button {
-  color: #eff5ff;
-  border-color: #aebdd3;
+  color: var(--game-foreground);
+  border-color: var(--game-foreground-muted);
 }
 
 .profile-content .profile-tabs .active {
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .profile-list li,
 .profile-ranking .profile-ranking-item {
   margin: 0;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 4px 12px #1722350d;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .profile-list li {
@@ -152,7 +152,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
-  color: #172235;
+  color: var(--ink-strong);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -163,8 +163,8 @@
 
 .profile-list li.profile-challenge-locked {
   padding: 0;
-  background: #d3dbe5 !important;
-  color: #63728a;
+  background: var(--surface-muted) !important;
+  color: var(--ink-muted);
 }
 
 .profile-challenge-locked > button {
@@ -198,7 +198,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: #101827b8;
+  background: var(--overlay);
 }
 
 .locked-challenge-modal > div {
@@ -206,10 +206,10 @@
   width: min(100%, 360px);
   padding: 2rem;
   border-radius: 16px;
-  background: #f6f8fc;
-  color: #172235;
+  background: var(--surface);
+  color: var(--ink-strong);
   text-align: center;
-  box-shadow: 0 18px 50px #0006;
+  box-shadow: 0 18px 50px var(--shadow);
 }
 
 .locked-challenge-modal p {
@@ -237,7 +237,7 @@
 
 .community-challenge-card small {
   display: block;
-  color: #63728a;
+  color: var(--ink-muted);
   font-size: .72rem;
 }
 
@@ -248,7 +248,7 @@
   margin-top: .35rem;
   overflow: hidden;
   border-radius: 99px;
-  background: #dbe3ef;
+  background: var(--surface-muted);
 }
 
 .community-challenge-card i b {
@@ -291,7 +291,7 @@
 }
 
 .profile-affiliation-separator {
-  color: #63728a;
+  color: var(--ink-muted);
   font-size: 1.25rem;
   font-weight: 800;
 }
@@ -316,8 +316,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
   gap: 1px;
-  border-top: 1px solid #dbe3ef;
-  background: #dbe3ef;
+  border-top: 1px solid var(--line);
+  background: var(--line);
 }
 
 .profile-summary-column {
@@ -328,7 +328,7 @@
   flex-direction: column;
   align-items: center;
   padding: .75rem .5rem;
-  background: #f6f8fc;
+  background: var(--surface);
 }
 
 .profile-summary-link {
@@ -347,14 +347,14 @@
   margin: 1.25rem auto 0;
   border: 0;
   background: transparent;
-  color: #eff5ff;
+  color: var(--game-foreground);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
 .profile-logout:hover {
-  color: #f6c86b;
+  color: var(--color-sun);
 }
 
 .profile-hero .profile-summary-details .game-kicker {
@@ -380,8 +380,8 @@
   height: 54px;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--sage) var(--progress), #dbe3ef 0);
-  color: #172235;
+  background: conic-gradient(var(--sage) var(--progress), var(--surface-muted) 0);
+  color: var(--ink-strong);
   font-size: .75rem;
   font-weight: 800;
 }
@@ -391,7 +391,7 @@
   width: 44px;
   height: 44px;
   border-radius: inherit;
-  background: #f6f8fc;
+  background: var(--surface);
   content: '';
 }
 

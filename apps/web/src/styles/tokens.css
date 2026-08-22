@@ -1,0 +1,49 @@
+:root {
+  /* Paleta floral */
+  --color-olive: #5e5c2d;
+  --color-sage: #999a57;
+  --color-peach: #fc9c51;
+  --color-sun: #fec67c;
+  --color-blush: #f9bdb0;
+  --color-mauve: #a16a84;
+  --color-velvet-blue: #777e88;
+
+  /* Tokens semánticos compartidos */
+  --paper: #fff8ed;
+  --ink: var(--color-olive);
+  --ink-strong: #393817;
+  --ink-muted: color-mix(in srgb, var(--color-olive) 68%, var(--color-velvet-blue));
+  --sage: var(--color-sage);
+  --clay: var(--color-peach);
+  --line: color-mix(in srgb, var(--color-sage) 48%, var(--paper));
+  --surface: #fffdf8;
+  --surface-soft: color-mix(in srgb, var(--color-sun) 24%, var(--paper));
+  --surface-muted: color-mix(in srgb, var(--color-sage) 23%, var(--paper));
+  --overlay: rgb(57 56 23 / 72%);
+  --shadow: rgb(57 56 23 / 16%);
+  --on-accent: #fffdf8;
+  --accent: var(--color-peach);
+  --accent-strong: var(--color-mauve);
+  --link: var(--color-velvet-blue);
+  --success: var(--color-olive);
+  --success-surface: color-mix(in srgb, var(--color-sage) 35%, var(--paper));
+  --danger: var(--color-mauve);
+  --danger-surface: color-mix(in srgb, var(--color-blush) 65%, var(--paper));
+
+  /* Superficies específicas de la aplicación del juego */
+  --game-background: radial-gradient(circle at top, var(--color-velvet-blue), var(--color-olive) 72%);
+  --game-foreground: var(--on-accent);
+  --game-foreground-muted: color-mix(in srgb, var(--color-sun) 58%, var(--on-accent));
+}
+
+html[data-theme='dark'] {
+  --paper: #313117;
+  --ink: #fff7e8;
+  --ink-strong: #fffdf8;
+  --ink-muted: color-mix(in srgb, var(--color-sun) 58%, var(--color-velvet-blue));
+  --surface: #494920;
+  --surface-soft: #41411e;
+  --surface-muted: #55562d;
+  --line: color-mix(in srgb, var(--color-sage) 65%, var(--color-olive));
+  --on-accent: #fffdf8;
+}

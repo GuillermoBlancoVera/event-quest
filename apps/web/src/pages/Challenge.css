@@ -1,15 +1,15 @@
 .answers .answer-correct:disabled {
-  border-color: #16803c;
-  background: #d9f0df;
-  color: #0f5f2b;
+  border-color: var(--success);
+  background: var(--success-surface);
+  color: var(--success);
   opacity: 1;
   transform: translateX(4px);
 }
 
 .answers .answer-incorrect:disabled {
-  border-color: #c53939;
-  background: #f8dddd;
-  color: #982c2c;
+  border-color: var(--danger);
+  background: var(--danger-surface);
+  color: var(--danger);
   opacity: 1;
   transform: translateX(4px);
 }
@@ -26,7 +26,7 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: #101827b8;
+  background: var(--overlay);
 }
 
 .challenge-result-content {
@@ -35,17 +35,17 @@
   padding: 2rem;
   border-radius: 16px;
   text-align: center;
-  box-shadow: 0 18px 50px #0006;
+  box-shadow: 0 18px 50px var(--shadow);
 }
 
 .challenge-result-modal.correct .challenge-result-content {
-  background: #e0f3e5;
-  color: #0f5f2b;
+  background: var(--success-surface);
+  color: var(--success);
 }
 
 .challenge-result-modal.incorrect .challenge-result-content {
-  background: #fae2e2;
-  color: #982c2c;
+  background: var(--danger-surface);
+  color: var(--danger);
 }
 
 .challenge-result-content p {

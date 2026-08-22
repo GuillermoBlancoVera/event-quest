@@ -1,6 +1,6 @@
 .community-challenge-progress {
   margin: 1.25rem 0 2rem;
-  color: #f6c86b;
+  color: var(--color-sun);
   font-weight: 800;
 }
 
@@ -9,7 +9,7 @@
 }
 
 .community-scan-list h2 {
-  color: #eff5ff;
+  color: var(--game-foreground);
 }
 
 .community-scan-list article {
@@ -19,10 +19,10 @@
   min-height: 64px;
   margin: .65rem 0;
   padding: .65rem;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
-  color: #172235;
+  background: var(--surface);
+  color: var(--ink-strong);
 }
 
 .community-scan-list article .ranking-affiliation-icon,
@@ -36,8 +36,8 @@
 }
 
 .community-scan-placeholder {
-  background: #dbe3ef;
-  color: #63728a;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
   font-weight: 800;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .community-scan-list article small {
-  color: #63728a;
+  color: var(--ink-muted);
 }
 
 .community-scan-missing article {
@@ -68,12 +68,12 @@
 }
 
 .community-scan-result strong {
-  color: #f6c86b;
+  color: var(--color-sun);
   font-size: 1.5rem;
 }
 
 .community-scan-result small {
-  color: #d9e7ff;
+  color: var(--game-foreground-muted);
 }
 
 .community-scan-player {
@@ -81,7 +81,7 @@
   height: 120px;
   overflow: hidden;
   border-radius: 50%;
-  background: #dbe3ef;
+  background: var(--surface-muted);
 }
 
 .community-scan-player img {

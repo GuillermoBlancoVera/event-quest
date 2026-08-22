@@ -1,7 +1,7 @@
 .game-app {
     min-height: 100vh;
-    background: radial-gradient(circle at top, #233757, #101827 65%);
-    color: #eff5ff
+    background: var(--game-background);
+    color: var(--game-foreground)
 }
 
 .game-header {
@@ -18,7 +18,7 @@
     display: flex;
     align-items: center;
     gap: .5rem;
-    color: #fff;
+    color: var(--game-foreground);
     text-decoration: none;
     font-weight: 900;
     letter-spacing: .04em
@@ -37,7 +37,7 @@
 
 .game-header nav a,
 .game-header nav button {
-    color: #d9e7ff;
+    color: var(--game-foreground-muted);
     background: transparent;
     border: 0;
     text-decoration: none;
@@ -56,17 +56,17 @@
 }
 
 .game-app .notice {
-    color: #172235;
-    background: #fff8e8;
-    border-left-color: #f28b4b
+    color: var(--ink-strong);
+    background: var(--surface-soft);
+    border-left-color: var(--accent)
 }
 
 .game-panel {
-    background: #f6f8fc;
-    color: #172235;
+    background: var(--surface);
+    color: var(--ink-strong);
     border-radius: 20px;
     padding: clamp(1.5rem, 4vw, 3rem);
-    box-shadow: 0 24px 70px #0005
+    box-shadow: 0 24px 70px var(--shadow)
 }
 
 .game-panel h1 {
@@ -75,7 +75,7 @@
 }
 
 .game-kicker {
-    color: #63728a;
+    color: var(--ink-muted);
     font-weight: 800;
     letter-spacing: .12em;
     font-size: .72rem
@@ -88,16 +88,16 @@
 }
 
 .auth-tabs button {
-    border: 1px solid #cdd7e7;
+    border: 1px solid var(--line);
     border-radius: 99px;
     padding: .55rem 1rem;
-    background: #fff;
-    color: #31425a
+    background: var(--surface);
+    color: var(--ink)
 }
 
 .auth-tabs .active {
-    background: #172b4d;
-    color: #fff
+    background: var(--color-velvet-blue);
+    color: var(--on-accent)
 }
 
 .auth-form {
@@ -114,7 +114,7 @@
 
 .auth-form input {
     padding: .8rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--line);
     border-radius: 9px;
     font: inherit
 }
@@ -122,8 +122,8 @@
 .game-button {
     border: 0;
     border-radius: 9px;
-    background: #f28b4b;
-    color: #1d2030;
+    background: var(--accent);
+    color: var(--ink-strong);
     padding: .9rem 1.2rem;
     font-weight: 800;
     font: inherit;
@@ -144,10 +144,10 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, #f6c86b, #ef7b55);
+    background: linear-gradient(135deg, var(--color-sun), var(--accent));
     font-size: 2.5rem;
     font-weight: 900;
-    color: #18273f;
+    color: var(--ink-strong);
     overflow: hidden
 }
 
@@ -185,7 +185,7 @@
 .score {
     font-size: 2.6rem;
     font-weight: 900;
-    color: #ee7d4c
+    color: var(--accent-strong)
 }
 
 .profile-tabs {
@@ -193,7 +193,7 @@
 }
 
 .profile-card {
-    border: 1px solid #dbe3ef;
+    border: 1px solid var(--line);
     border-radius: 14px;
     padding: 1.25rem
 }
@@ -208,19 +208,19 @@
     display: flex;
     justify-content: space-between;
     padding: .8rem 0;
-    border-bottom: 1px solid #e7edf5
+    border-bottom: 1px solid var(--line)
 }
 
 .challenge-points.positive {
-    color: #16803c
+    color: var(--success)
 }
 
 .challenge-points.zero {
-    color: #7b8798
+    color: var(--ink-muted)
 }
 
 .challenge-points.negative {
-    color: #c53939
+    color: var(--danger)
 }
 
 .ranking-avatar {
@@ -231,8 +231,8 @@
     display: grid;
     place-items: center;
     overflow: hidden;
-    background: linear-gradient(135deg, #f6c86b, #ef7b55);
-    color: #18273f;
+    background: linear-gradient(135deg, var(--color-sun), var(--accent));
+    color: var(--ink-strong);
     font-weight: 900
 }
 
@@ -252,7 +252,7 @@
 }
 
 .profile-card a {
-    color: #244c86;
+    color: var(--link);
     font-weight: 700
 }
 
