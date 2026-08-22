@@ -86,9 +86,14 @@ export function MediaGallery() {
       for (const [index, file] of files.entries()) {
         setStatus(`Subiendo ${index + 1} de ${files.length}…`);
         const contentType = mediaType(file);
-        const upload = await api.createMediaUpload({ batchId, fileName: file.name, contentType, message });
+        const thumbnail = contentType.startsWith('video/') ? await createVideoThumbnail(file) : undefined;
+        const upload = await api.createMediaUpload({ batchId, fileName: file.name, contentType, message, thumbnailContentType: thumbnail ? 'image/jpeg' : undefined });
         const response = await fetch(upload.uploadUrl, { method: 'PUT', headers: { 'content-type': contentType }, body: file });
         if (!response.ok) throw new Error(`No se ha podido subir ${file.name}.`);
+        if (thumbnail && upload.thumbnailUploadUrl) {
+          const thumbnailResponse = await fetch(upload.thumbnailUploadUrl, { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: thumbnail });
+          if (!thumbnailResponse.ok) throw new Error(`No se ha podido preparar la miniatura de ${file.name}.`);
+        }
         await api.completeMediaUpload(upload.mediaId);
       }
       setFiles([]); setMessage(''); setOpen(false); setStatus('');
@@ -113,6 +118,18 @@ const extension = (file: File) => file.name.toLocaleLowerCase().split('.').pop()
 const isMediaFile = (file: File) => file.type.startsWith('image/') || file.type.startsWith('video/') || imageExtensions.has(extension(file)) || videoExtensions.has(extension(file));
 const mediaType = (file: File) => file.type || (videoExtensions.has(extension(file)) ? 'video/*' : 'image/*');
 const createBatchId = () => typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+const createVideoThumbnail = (file: File): Promise<Blob | undefined> => new Promise(resolve => {
+  const video = document.createElement('video');
+  const url = URL.createObjectURL(file);
+  const finish = (thumbnail?: Blob) => { URL.revokeObjectURL(url); resolve(thumbnail); };
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'metadata';
+  video.onloadedmetadata = () => { video.currentTime = Math.min(1, Math.max(0, video.duration / 2)); };
+  video.onseeked = () => { const canvas = document.createElement('canvas'); const scale = Math.min(1, 960 / video.videoWidth); canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale); canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height); canvas.toBlob(blob => finish(blob ?? undefined), 'image/jpeg', 0.82); };
+  video.onerror = () => finish();
+  video.src = url;
+});
 
 type MediaGroup = { id: string; items: EventMedia[] };
 const groupMedia = (media: EventMedia[]): MediaGroup[] => {
@@ -127,6 +144,7 @@ const groupMedia = (media: EventMedia[]): MediaGroup[] => {
 function MediaCard({ group, onEdit, onDelete }: { group: MediaGroup; onEdit: (item: EventMedia) => void; onDelete: (item: EventMedia) => void }) {
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState<Set<string>>(new Set());
+  const [playingVideo, setPlayingVideo] = useState<string>();
   const activeIndex = Math.min(index, group.items.length - 1);
   const item = group.items[activeIndex];
   const multiple = group.items.length > 1;
@@ -134,7 +152,7 @@ function MediaCard({ group, onEdit, onDelete }: { group: MediaGroup; onEdit: (it
     const mediaId = group.items[slide].mediaId;
     setLoaded(current => new Set(current).add(mediaId));
   };
-  const change = (direction: number) => setIndex((activeIndex + direction + group.items.length) % group.items.length);
+  const change = (direction: number) => { setPlayingVideo(undefined); setIndex((activeIndex + direction + group.items.length) % group.items.length); };
 
-  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <><span className="media-card-count">{activeIndex + 1}/{group.items.length}</span><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}<div className="media-carousel">{!loaded.has(item.mediaId) && <span className="media-card-loader" role="status" aria-label="Cargando" />}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? <video controls={slide === activeIndex} preload="auto" src={entry.url} onCanPlay={() => markReady(slide)} /> : <img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} />}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
+  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <><span className="media-card-count">{activeIndex + 1}/{group.items.length}</span><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}<div className="media-carousel">{!item.contentType.startsWith('video/') && !loaded.has(item.mediaId) && <span className="media-card-loader" role="status" aria-label="Cargando" />}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? playingVideo === entry.mediaId ? <video controls autoPlay preload="auto" src={entry.url} /> : <button className="media-video-preview" type="button" onClick={() => setPlayingVideo(entry.mediaId)}>{entry.thumbnailUrl && <img loading="eager" src={entry.thumbnailUrl} alt="Vista previa del vídeo" onLoad={() => markReady(slide)} />}<span aria-hidden="true" /></button> : <img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} />}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
 }
