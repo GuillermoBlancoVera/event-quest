@@ -4,25 +4,29 @@ variable "custom_domain" {
   type    = string
   default = null
 }
+variable "allowed_origins" { type = list(string) }
 variable "tags" { type = map(string) }
 
 locals {
   routes = {
-    "POST /register-user"      = "register-user"
-    "POST /login"              = "login"
-    "GET /profile/{id}"        = "get-profile"
-    "GET /challenges"          = "get-question"
-    "GET /question/{id}"       = "get-question"
-    "POST /submit-answer/{id}" = "submit-answer"
-    "POST /community-scan/{id}" = "scan-community"
-    "GET /por-la-cara"          = "por-la-cara"
-    "GET /por-la-cara/{id}"     = "por-la-cara"
-    "POST /por-la-cara/{id}"    = "por-la-cara"
-    "GET /ranking"             = "get-ranking"
-    "GET /stats"               = "get-stats"
-    "POST /admin/upsert-affiliation" = "admin"
-    "POST /admin/upsert-por-la-cara" = "admin"
+    "POST /register-user"                 = "register-user"
+    "POST /login"                         = "login"
+    "GET /profile/{id}"                   = "get-profile"
+    "GET /challenges"                     = "get-question"
+    "GET /question/{id}"                  = "get-question"
+    "POST /submit-answer/{id}"            = "submit-answer"
+    "POST /community-scan/{id}"           = "scan-community"
+    "GET /por-la-cara"                    = "por-la-cara"
+    "GET /por-la-cara/{id}"               = "por-la-cara"
+    "POST /por-la-cara/{id}"              = "por-la-cara"
+    "GET /ranking"                        = "get-ranking"
+    "GET /stats"                          = "get-stats"
+    "POST /admin/upsert-affiliation"      = "admin"
+    "POST /admin/upsert-por-la-cara"      = "admin"
     "POST /admin/assign-user-affiliation" = "admin"
+    "POST /media/uploads"                 = "media"
+    "POST /media/{id}/complete"           = "media"
+    "GET /media"                          = "media"
   }
 }
 
@@ -31,7 +35,7 @@ resource "aws_apigatewayv2_api" "this" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = ["*"]
+    allow_origins = var.allowed_origins
     allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["content-type", "authorization"]
   }

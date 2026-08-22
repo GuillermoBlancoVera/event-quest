@@ -5,7 +5,7 @@ locals {
     Environment = var.environment
     ManagedBy   = "Terraform"
   }
-  services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "scan-community", "por-la-cara", "get-ranking", "get-stats", "admin"])
+  services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "scan-community", "por-la-cara", "get-ranking", "get-stats", "media", "admin"])
 }
 
 module "dynamodb" {
@@ -15,10 +15,11 @@ module "dynamodb" {
 }
 
 module "iam" {
-  source     = "./modules/iam"
-  prefix     = local.prefix
-  table_arns = module.dynamodb.table_arns
-  tags       = local.tags
+  source            = "./modules/iam"
+  prefix            = local.prefix
+  table_arns        = module.dynamodb.table_arns
+  assets_bucket_arn = aws_s3_bucket.assets.arn
+  tags              = local.tags
 }
 
 module "lambda" {
@@ -28,13 +29,16 @@ module "lambda" {
   role_arn        = module.iam.lambda_role_arn
   artifact_bucket = var.lambda_artifact_bucket
   artifact_key    = "${each.value}.zip"
-  environment = {
-    USERS_TABLE      = module.dynamodb.users_table
-    CHALLENGES_TABLE = module.dynamodb.challenges_table
-    SETTINGS_TABLE   = module.dynamodb.settings_table
-    AUDIT_TABLE      = module.dynamodb.audit_table
+  environment = merge({
+    USERS_TABLE        = module.dynamodb.users_table
+    CHALLENGES_TABLE   = module.dynamodb.challenges_table
+    SETTINGS_TABLE     = module.dynamodb.settings_table
+    AUDIT_TABLE        = module.dynamodb.audit_table
     AFFILIATIONS_TABLE = module.dynamodb.affiliations_table
-  }
+    }, each.value == "media" ? {
+    MEDIA_TABLE  = module.dynamodb.media_table
+    MEDIA_BUCKET = aws_s3_bucket.assets.bucket
+  } : {})
   tags = local.tags
 }
 
@@ -47,8 +51,9 @@ module "api" {
       function_name = lambda.function_name
     }
   }
-  custom_domain = var.custom_domain
-  tags          = local.tags
+  custom_domain   = var.custom_domain
+  allowed_origins = var.web_origins
+  tags            = local.tags
 }
 
 module "cloudwatch" {

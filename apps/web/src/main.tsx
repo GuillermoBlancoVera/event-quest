@@ -7,6 +7,7 @@ import './styles/index.css';
 import './styles/lowercase.css';
 import './styles/wedding.css';
 import './styles/wedding-home.css';
+import './styles/gallery-invitation.css';
 import './styles/game.css';
 import './pages/Ranking.css';
 

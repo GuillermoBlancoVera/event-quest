@@ -23,6 +23,18 @@ resource "aws_s3_bucket_public_access_block" "assets" {
   restrict_public_buckets = false
 }
 
+resource "aws_s3_bucket_cors_configuration" "assets" {
+  bucket = aws_s3_bucket.assets.id
+
+  cors_rule {
+    allowed_methods = ["GET", "PUT"]
+    allowed_origins = var.web_origins
+    allowed_headers = ["content-type"]
+    expose_headers  = ["etag"]
+    max_age_seconds = 3600
+  }
+}
+
 resource "aws_s3_bucket_policy" "assets_public_images" {
   bucket     = aws_s3_bucket.assets.id
   depends_on = [aws_s3_bucket_public_access_block.assets]
@@ -34,7 +46,7 @@ resource "aws_s3_bucket_policy" "assets_public_images" {
       Effect    = "Allow"
       Principal = "*"
       Action    = "s3:GetObject"
-      Resource  = [
+      Resource = [
         "${aws_s3_bucket.assets.arn}/avatars/*",
         "${aws_s3_bucket.assets.arn}/affiliations/*",
       ]

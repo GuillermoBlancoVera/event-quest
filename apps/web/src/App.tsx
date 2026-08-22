@@ -14,10 +14,11 @@ import { PorLaCara } from './pages/PorLaCara';
 import { Ranking } from './pages/Ranking';
 import { Stats } from './pages/Stats';
 import { WeddingHome } from './pages/WeddingHome';
+import { MediaGallery } from './pages/MediaGallery';
 
 export function App() {
   return <ErrorBoundary><Routes>
-    <Route element={<Layout/>}><Route path="/" element={<WeddingHome/>}/></Route>
+    <Route element={<Layout/>}><Route path="/" element={<WeddingHome/>}/><Route path="/galeria" element={<MediaGallery/>}/></Route>
     <Route path="/juego" element={<GameAccess/>}/>
     <Route element={<GameLayout/>}>
       <Route path="/juego/perfil" element={<PlayerProfile/>}/>

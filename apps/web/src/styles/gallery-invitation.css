@@ -1,0 +1,4 @@
+.gallery-invitation { max-width: none; padding: 6rem 1.5rem; background: var(--surface-muted); text-align: center; }
+.gallery-invitation h2 { margin: .5rem 0 1.5rem; color: var(--sage); font-family: Caveat, cursive; font-size: clamp(3.3rem, 7vw, 5.8rem); line-height: .9; }
+.gallery-invitation p:not(.eyebrow) { max-width: 580px; margin: 0 auto 2rem; }
+@media (max-width: 700px) { .gallery-invitation { padding-top: 4.5rem; padding-bottom: 4.5rem; } }

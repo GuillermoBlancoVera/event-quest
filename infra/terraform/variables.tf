@@ -18,6 +18,12 @@ variable "custom_domain" {
   default = null
 }
 
+variable "web_origins" {
+  type        = list(string)
+  description = "Allowed browser origins for the API and direct S3 media uploads."
+  default     = ["https://guillermowhite.github.io", "http://localhost:5173"]
+}
+
 variable "lambda_artifact_bucket" {
   type        = string
   description = "S3 bucket holding Lambda zip artifacts."
