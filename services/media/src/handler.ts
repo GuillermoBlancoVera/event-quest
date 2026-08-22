@@ -3,7 +3,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCom
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { CreateMediaUploadRequest, EventMedia, User } from '@event-quest/shared';
+import type { CancelMediaUploadsRequest, CreateMediaUploadRequest, EventMedia, User } from '@event-quest/shared';
 import { verifyMediaSession } from '../../session.js';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     return reply(200, media);
   }
 
-  const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest;
+  const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest & CancelMediaUploadsRequest;
   if (method === 'POST' && path.endsWith('/uploads')) {
     if (typeof body.fileName !== 'string' || !isMedia(body.contentType)) return reply(400, { message: 'Selecciona una imagen o un vídeo válido.' });
     const now = new Date().toISOString();
@@ -35,16 +35,30 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     const thumbnailKey = body.thumbnailContentType === 'image/jpeg' ? `media/thumbnails/${mediaId}.jpg` : undefined;
     const displayKey = body.displayContentType === 'image/jpeg' && body.contentType.startsWith('image/') ? `media/display/${mediaId}.jpg` : undefined;
     const message = typeof body.message === 'string' && body.message.trim() ? body.message.trim().slice(0, 500) : 'recuerditos';
+    const cancellationToken = crypto.randomUUID();
     const session = await verifyMediaSession(event.headers.authorization);
     const user = session
       ? await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${session.sub}`, SK: 'PROFILE' } }))
       : undefined;
     const author = user?.Item as User | undefined;
-    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, batchId, key, thumbnailKey, displayKey, authorId: author?.userId, authorName: author?.name ?? 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
+    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, batchId, key, thumbnailKey, displayKey, cancellationToken, authorId: author?.userId, authorName: author?.name ?? 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
     const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: key, ContentType: body.contentType }), { expiresIn: 900 });
     const thumbnailUploadUrl = thumbnailKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: thumbnailKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
     const displayUploadUrl = displayKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: displayKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
-    return reply(201, { mediaId, key, uploadedAt: now, uploadUrl, thumbnailUploadUrl, displayUploadUrl });
+    return reply(201, { mediaId, cancellationToken, key, uploadedAt: now, uploadUrl, thumbnailUploadUrl, displayUploadUrl });
+  }
+
+  if (method === 'POST' && path.endsWith('/cancel')) {
+    const uploads = Array.isArray(body.uploads) ? body.uploads.slice(0, 100) : [];
+    if (!uploads.length || uploads.some(upload => typeof upload?.mediaId !== 'string' || typeof upload?.cancellationToken !== 'string')) return reply(400, { message: 'No se han encontrado archivos para cancelar.' });
+    const now = new Date().toISOString();
+    await Promise.all(uploads.map(async upload => {
+      const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': upload.mediaId } }));
+      const item = result.Items?.[0];
+      if (!item || item.cancellationToken !== upload.cancellationToken || !['PENDING', 'UPLOADED'].includes(item.status)) return;
+      await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :status, deletedAt = :now', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':status': 'DELETED', ':now': now } }));
+    }));
+    return reply(200, { ok: true });
   }
 
   const mediaId = event.pathParameters?.id;

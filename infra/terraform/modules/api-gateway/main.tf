@@ -25,6 +25,7 @@ locals {
     "POST /admin/upsert-por-la-cara"      = "admin"
     "POST /admin/assign-user-affiliation" = "admin"
     "POST /media/uploads"                 = "media"
+    "POST /media/cancel"                  = "media"
     "POST /media/{id}/complete"           = "media"
     "PATCH /media/{id}"                   = "media"
     "DELETE /media/{id}"                  = "media"

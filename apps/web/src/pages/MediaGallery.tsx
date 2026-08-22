@@ -27,6 +27,7 @@ export function MediaGallery() {
   const [deleting, setDeleting] = useState<EventMedia>();
   const [previewing, setPreviewing] = useState<{ items: EventMedia[]; index: number }>();
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const uploadAbortRef = useRef<AbortController>();
   const [sharing, setSharing] = useState(false);
   const [editMessage, setEditMessage] = useState('');
   const [manageStatus, setManageStatus] = useState('');
@@ -45,6 +46,10 @@ export function MediaGallery() {
     setFiles(accepted);
   };
   const close = () => { if (!busy) { setOpen(false); setStatus(''); } };
+  const cancelUpload = () => {
+    uploadAbortRef.current?.abort();
+    setStatus('Cancelando subida…');
+  };
   const login = async (event: FormEvent) => {
     event.preventDefault();
     setLoggingIn(true);
@@ -92,29 +97,45 @@ export function MediaGallery() {
   };
   const uploadFiles = async () => {
     if (!files.length) { setStatus('Elige al menos una foto o vídeo.'); return; }
+    const abort = new AbortController();
+    const uploads: Array<{ mediaId: string; cancellationToken: string }> = [];
+    uploadAbortRef.current = abort;
+    const ensureActive = () => { if (abort.signal.aborted) throw new UploadCancelledError(); };
     setBusy(true); setUploadProgress(0); setStatus(`Subiendo 0 de ${files.length}…`);
     try {
       const batchId = createBatchId();
       for (const [index, file] of files.entries()) {
+        ensureActive();
         setStatus(`Subiendo ${index + 1} de ${files.length}…`);
         setUploadProgress(0);
         const contentType = mediaType(file);
         const thumbnail = contentType.startsWith('video/') ? await createVideoThumbnail(file) : undefined;
         const display = await createDisplayImage(file, contentType);
+        ensureActive();
         const upload = await api.createMediaUpload({ batchId, fileName: file.name, contentType, message, thumbnailContentType: thumbnail ? 'image/jpeg' : undefined, displayContentType: display ? 'image/jpeg' : undefined });
-        await uploadWithProgress(upload.uploadUrl, contentType, file, loaded => setUploadProgress(Math.round(loaded / file.size * 100)));
+        uploads.push({ mediaId: upload.mediaId, cancellationToken: upload.cancellationToken });
+        ensureActive();
+        await uploadWithProgress(upload.uploadUrl, contentType, file, loaded => setUploadProgress(Math.round(loaded / file.size * 100)), abort.signal);
         if (display && upload.displayUploadUrl) {
-          await uploadWithProgress(upload.displayUploadUrl, 'image/jpeg', display);
+          await uploadWithProgress(upload.displayUploadUrl, 'image/jpeg', display, undefined, abort.signal);
         }
         if (thumbnail && upload.thumbnailUploadUrl) {
-          await uploadWithProgress(upload.thumbnailUploadUrl, 'image/jpeg', thumbnail);
+          await uploadWithProgress(upload.thumbnailUploadUrl, 'image/jpeg', thumbnail, undefined, abort.signal);
         }
+        ensureActive();
         await api.completeMediaUpload(upload.mediaId);
+        ensureActive();
       }
       setFiles([]); setMessage(''); setOpen(false); setStatus('');
       load();
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'No se han podido subir los archivos.'); }
-    finally { setBusy(false); setUploadProgress(0); }
+    } catch (error) {
+      if (abort.signal.aborted) {
+        try {
+          if (uploads.length) await api.cancelMediaUploads({ uploads });
+          setFiles([]); setMessage(''); setStatus('La subida se ha cancelado.'); load();
+        } catch { setStatus('No se han podido ocultar todos los archivos ya subidos.'); }
+      } else setStatus(error instanceof Error ? error.message : 'No se han podido subir los archivos.');
+    } finally { if (uploadAbortRef.current === abort) uploadAbortRef.current = undefined; setBusy(false); setUploadProgress(0); }
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -127,7 +148,7 @@ export function MediaGallery() {
     <header className="media-gallery-header"><h1>Galería</h1></header>
     {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} onPreview={(items, index) => setPreviewing({ items, index })} />)}</div> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
     <button className="media-add-button" onClick={() => setOpen(true)} aria-label="Subir fotos o vídeos">+</button>
-    {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div>{busy ? <div className="media-upload-progress" role="status"><span aria-hidden="true" /><p id="media-upload-title">Subiendo archivos</p><strong>{status}</strong><div className="media-upload-progress-bar" aria-label={`${uploadProgress}% completado`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress} role="progressbar"><span style={{ width: `${uploadProgress}%` }} /><b>{uploadProgress}%</b></div></div> : <><button className="media-close" onClick={close} aria-label="Cerrar">×</button><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><input id="event-media-camera" type="file" accept="image/*" capture="environment" onChange={choose} /><input id="event-media-video-camera" type="file" accept="video/*" capture="environment" onChange={choose} />{isAndroid ? <button className="button" type="button" onClick={() => setAndroidPickerOpen(true)}>Seleccionar archivos</button> : <label className="button" htmlFor="event-media-file">Seleccionar archivos</label>}{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{`Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form>{isAndroid && androidPickerOpen && <div className="media-choice-modal" role="dialog" aria-modal="true" aria-label="Elegir archivo"><div><button className="media-close" type="button" onClick={() => setAndroidPickerOpen(false)} aria-label="Cerrar">×</button><h2>¿Qué quieres subir?</h2><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-file')?.click(); }}>Elegir del carrete</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-camera')?.click(); }}>Hacer foto</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-video-camera')?.click(); }}>Grabar vídeo</button></div></div>}</>}</div></div>}
+    {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div>{busy ? <div className="media-upload-progress" role="status"><span aria-hidden="true" /><p id="media-upload-title">Subiendo archivos</p><strong>{status}</strong><div className="media-upload-progress-bar" aria-label={`${uploadProgress}% completado`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress} role="progressbar"><span style={{ width: `${uploadProgress}%` }} /><b>{uploadProgress}%</b></div><button type="button" onClick={cancelUpload}>Cancelar subida</button></div> : <><button className="media-close" onClick={close} aria-label="Cerrar">×</button><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. Todos serán visibles para las personas de la boda. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><input id="event-media-camera" type="file" accept="image/*" capture="environment" onChange={choose} /><input id="event-media-video-camera" type="file" accept="video/*" capture="environment" onChange={choose} />{isAndroid ? <button className="button" type="button" onClick={() => setAndroidPickerOpen(true)}>Seleccionar archivos</button> : <label className="button" htmlFor="event-media-file">Seleccionar archivos</label>}{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{`Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form>{isAndroid && androidPickerOpen && <div className="media-choice-modal" role="dialog" aria-modal="true" aria-label="Elegir archivo"><div><button className="media-close" type="button" onClick={() => setAndroidPickerOpen(false)} aria-label="Cerrar">×</button><h2>¿Qué quieres subir?</h2><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-file')?.click(); }}>Elegir del carrete</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-camera')?.click(); }}>Hacer foto</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-video-camera')?.click(); }}>Grabar vídeo</button></div></div>}</>}</div></div>}
     {confirmWithoutMessage && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-empty-message-title"><div><button className="media-close" type="button" onClick={() => setConfirmWithoutMessage(false)} aria-label="Cerrar">×</button><h2 id="media-empty-message-title">¿Subir sin descripción?</h2><p>Se publicará como “recuerditos”.</p><div className="media-confirm-actions"><button className="button" type="button" onClick={() => { setConfirmWithoutMessage(false); void uploadFiles(); }}>Sí, subir</button><button type="button" onClick={() => setConfirmWithoutMessage(false)}>Volver a editar</button></div></div></div>}
     {editing && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title"><div><button className="media-close" onClick={() => !managing && setEditing(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">EDITAR RECUERDO</p><h2 id="media-edit-title">Cambia la descripción</h2><p className="media-previous-message">Texto actual: “{editing.message || 'recuerditos'}”</p><form className="media-form" onSubmit={edit}><label htmlFor="event-media-edit-message">Nueva descripción<textarea id="event-media-edit-message" maxLength={500} value={editMessage} onChange={event => setEditMessage(event.target.value)} /></label>{manageStatus && <p className="notice">{manageStatus}</p>}<button className="button" disabled={managing}>{managing ? 'Guardando…' : 'Guardar cambios'}</button></form></div></div>}
     {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Dejará de aparecer en la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
@@ -141,13 +162,19 @@ const extension = (file: File) => file.name.toLocaleLowerCase().split('.').pop()
 const isMediaFile = (file: File) => file.type.startsWith('image/') || file.type.startsWith('video/') || imageExtensions.has(extension(file)) || videoExtensions.has(extension(file));
 const mediaType = (file: File) => file.type || (videoExtensions.has(extension(file)) ? 'video/*' : 'image/*');
 const createBatchId = () => typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-const uploadWithProgress = (url: string, contentType: string, body: Blob, onProgress?: (loaded: number) => void) => new Promise<void>((resolve, reject) => {
+class UploadCancelledError extends Error { constructor() { super('La subida se ha cancelado.'); } }
+const uploadWithProgress = (url: string, contentType: string, body: Blob, onProgress?: (loaded: number) => void, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
   const request = new XMLHttpRequest();
+  const cleanup = () => signal?.removeEventListener('abort', abort);
+  const abort = () => request.abort();
   request.open('PUT', url);
   request.setRequestHeader('content-type', contentType);
   request.upload.onprogress = event => { if (event.lengthComputable) onProgress?.(event.loaded); };
-  request.onload = () => request.status >= 200 && request.status < 300 ? resolve() : reject(new Error('No se ha podido subir el archivo.'));
-  request.onerror = () => reject(new Error('No se ha podido subir el archivo.'));
+  request.onload = () => { cleanup(); request.status >= 200 && request.status < 300 ? resolve() : reject(new Error('No se ha podido subir el archivo.')); };
+  request.onerror = () => { cleanup(); reject(new Error('No se ha podido subir el archivo.')); };
+  request.onabort = () => { cleanup(); reject(new UploadCancelledError()); };
+  if (signal?.aborted) { reject(new UploadCancelledError()); return; }
+  signal?.addEventListener('abort', abort, { once: true });
   request.send(body);
 });
 const createDisplayImage = (file: File, contentType: string): Promise<Blob | undefined> => new Promise(resolve => {
