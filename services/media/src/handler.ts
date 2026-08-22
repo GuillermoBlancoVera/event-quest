@@ -1,15 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { CreateMediaUploadRequest, EventMedia, User } from '@event-quest/shared';
+import type { CreateMediaUploadRequest, EventMedia } from '@event-quest/shared';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
 const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const eventKey = 'EVENT#WEDDING';
-const isMedia = (contentType: unknown) => typeof contentType === 'string' && /^(image|video)\/[\w.+-]+$/i.test(contentType);
+const isMedia = (contentType: unknown) => typeof contentType === 'string' && /^(image|video)\/(?:[\w.+-]+|\*)$/i.test(contentType);
 
 export const handler: APIGatewayProxyHandlerV2 = async event => {
   const method = event.requestContext.http.method;
@@ -22,25 +22,22 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     return reply(200, media);
   }
 
-  const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest & { userId?: string };
+  const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest;
   if (method === 'POST' && path.endsWith('/uploads')) {
-    if (!body.userId || typeof body.fileName !== 'string' || !isMedia(body.contentType)) return reply(400, { message: 'Selecciona una imagen o un vídeo válido.' });
-    const user = await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${body.userId}`, SK: 'PROFILE' } }));
-    if (!user.Item) return reply(401, { message: 'Inicia sesión para subir recuerdos.' });
+    if (typeof body.fileName !== 'string' || !isMedia(body.contentType)) return reply(400, { message: 'Selecciona una imagen o un vídeo válido.' });
     const now = new Date().toISOString();
     const mediaId = crypto.randomUUID();
     const extension = body.fileName.trim().split('.').pop()?.replace(/[^a-z0-9]/gi, '').slice(0, 12);
     const key = `media/${now.slice(0, 10)}/${mediaId}${extension ? `.${extension}` : ''}`;
     const message = typeof body.message === 'string' ? body.message.trim().slice(0, 500) : undefined;
-    const author = user.Item as User;
-    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, key, authorId: author.userId, authorName: author.name, message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
+    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, key, authorName: 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
     const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: key, ContentType: body.contentType }), { expiresIn: 900 });
     return reply(201, { mediaId, key, uploadedAt: now, uploadUrl });
   }
 
   const mediaId = event.pathParameters?.id;
   if (method === 'POST' && mediaId && path.endsWith('/complete')) {
-    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId AND authorId = :authorId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': mediaId, ':authorId': body.userId } }));
+    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': mediaId } }));
     const item = result.Items?.[0];
     if (!item) return reply(404, { message: 'No se ha encontrado la subida.' });
     try { await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key })); } catch { return reply(409, { message: 'La subida todavía no se ha completado.' }); }

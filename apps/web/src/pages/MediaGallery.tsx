@@ -1,40 +1,54 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import type { EventMedia } from '@event-quest/shared';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/PageLoader';
 import './MediaGallery.css';
 
 export function MediaGallery() {
-  const userId = localStorage.getItem('event-quest-user');
-  const [file, setFile] = useState<File>();
+  const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const [media, setMedia] = useState<EventMedia[]>();
-  const load = () => api.getMedia().then(setMedia).catch(error => setStatus(error.message));
+  const load = () => api.getMedia().then(setMedia).catch(error => { setMedia([]); setStatus(error instanceof Error ? error.message : 'No se han podido cargar los recuerdos.'); });
   useEffect(() => { load(); }, []);
 
   const choose = (event: ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0];
-    if (!selected) return;
-    if (!selected.type.startsWith('image/') && !selected.type.startsWith('video/')) { setStatus('Elige una imagen o un vídeo.'); return; }
-    setFile(selected); setStatus('');
+    const selected = [...(event.target.files ?? [])];
+    const accepted = selected.filter(isMediaFile);
+    if (accepted.length !== selected.length) setStatus('Solo se pueden subir imágenes y vídeos.');
+    setFiles(accepted);
   };
+  const close = () => { if (!busy) { setOpen(false); setStatus(''); } };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!file || !userId) { setStatus('Inicia sesión y elige una foto o un vídeo.'); return; }
-    setBusy(true); setStatus('Preparando la subida…');
+    if (!files.length) { setStatus('Elige al menos una foto o vídeo.'); return; }
+    setBusy(true); setStatus(`Subiendo 0 de ${files.length}…`);
     try {
-      const upload = await api.createMediaUpload({ userId, fileName: file.name, contentType: file.type, message });
-      const response = await fetch(upload.uploadUrl, { method: 'PUT', headers: { 'content-type': file.type }, body: file });
-      if (!response.ok) throw new Error('No se ha podido subir el archivo.');
-      await api.completeMediaUpload(upload.mediaId, userId);
-      setFile(undefined); setMessage(''); setStatus('¡Recuerdo guardado!');
-      const input = document.querySelector<HTMLInputElement>('#event-media-file'); if (input) input.value = '';
+      for (const [index, file] of files.entries()) {
+        setStatus(`Subiendo ${index + 1} de ${files.length}…`);
+        const contentType = mediaType(file);
+        const upload = await api.createMediaUpload({ fileName: file.name, contentType, message });
+        const response = await fetch(upload.uploadUrl, { method: 'PUT', headers: { 'content-type': contentType }, body: file });
+        if (!response.ok) throw new Error(`No se ha podido subir ${file.name}.`);
+        await api.completeMediaUpload(upload.mediaId);
+      }
+      setFiles([]); setMessage(''); setOpen(false); setStatus('');
       load();
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'No se ha podido subir el archivo.'); }
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'No se han podido subir los archivos.'); }
     finally { setBusy(false); }
   };
-  return <section className="page media-gallery"><p className="eyebrow">RECUERDOS DEL DÍA</p><h1>Sube tu momento favorito</h1><p className="lead">Fotos y vídeos para volver a vivirlo todo. Añade una nota para que no se nos olvide qué estaba pasando.</p>{userId ? <form className="media-form" onSubmit={submit}><label htmlFor="event-media-file">Foto o vídeo<input id="event-media-file" type="file" accept="image/*,video/*" onChange={choose} /></label>{file && <p className="media-file">{file.name}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label><button className="button" disabled={busy}>{busy ? 'Subiendo…' : 'Guardar recuerdo'}</button></form> : <p className="notice">Para subir un recuerdo y que aparezca tu nombre, <Link to="/juego">inicia sesión en el juego</Link>.</p>}{status && <p className="notice">{status}</p>}<h2>Galería</h2>{!media ? <PageLoader label="Cargando recuerdos" /> : <div className="media-grid">{media.map(item => <article key={item.mediaId}>{item.contentType.startsWith('video/') ? <video controls src={item.url} /> : <img src={item.url} alt={item.message || `Foto de ${item.authorName}`} />}<p>{item.message}</p><small>{item.authorName} · {new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>)}</div>}</section>;
+
+  return <section className="page media-gallery">
+    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{media.map(item => <article key={item.mediaId}>{item.contentType.startsWith('video/') ? <video controls src={item.url} /> : <img src={item.url} alt={item.message || 'Recuerdo de la boda'} />}{item.message && <p>{item.message}</p>}<small>{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>)}</div> : <div className="media-empty"><p className="eyebrow">EL ÁLBUM DE LA BODA</p><h1>Aún no hay recuerdos</h1><p>Estrena la galería con una foto o un vídeo.</p></div>}
+    <button className="media-add-button" onClick={() => setOpen(true)} aria-label="Subir fotos o vídeos">+</button>
+    {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div><button className="media-close" onClick={close} aria-label="Cerrar">×</button><p className="eyebrow">COMPARTE UN RECUERDO</p><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. La subida es anónima.</p><form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><label className="button" htmlFor="event-media-file">Seleccionar archivos</label>{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Subiendo…' : `Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form></div></div>}
+  </section>;
 }
+
+const imageExtensions = new Set(['avif', 'bmp', 'gif', 'heic', 'heif', 'jpeg', 'jpg', 'png', 'webp']);
+const videoExtensions = new Set(['3gp', 'avi', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'webm']);
+const extension = (file: File) => file.name.toLocaleLowerCase().split('.').pop() ?? '';
+const isMediaFile = (file: File) => file.type.startsWith('image/') || file.type.startsWith('video/') || imageExtensions.has(extension(file)) || videoExtensions.has(extension(file));
+const mediaType = (file: File) => file.type || (videoExtensions.has(extension(file)) ? 'video/*' : 'image/*');
