@@ -126,9 +126,15 @@ const groupMedia = (media: EventMedia[]): MediaGroup[] => {
 
 function MediaCard({ group, onEdit, onDelete }: { group: MediaGroup; onEdit: (item: EventMedia) => void; onDelete: (item: EventMedia) => void }) {
   const [index, setIndex] = useState(0);
-  const item = group.items[Math.min(index, group.items.length - 1)];
+  const [loaded, setLoaded] = useState<Set<string>>(new Set());
+  const activeIndex = Math.min(index, group.items.length - 1);
+  const item = group.items[activeIndex];
   const multiple = group.items.length > 1;
-  const change = (direction: number) => setIndex(current => (current + direction + group.items.length) % group.items.length);
+  const markReady = (slide: number) => {
+    const mediaId = group.items[slide].mediaId;
+    setLoaded(current => new Set(current).add(mediaId));
+  };
+  const change = (direction: number) => setIndex((activeIndex + direction + group.items.length) % group.items.length);
 
-  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <><span className="media-card-count">{index + 1}/{group.items.length}</span><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}<div className="media-carousel">{group.items.map((entry, slide) => <div className={`media-slide${slide === index ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? <video controls={slide === index} preload="auto" src={entry.url} /> : <img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} />}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
+  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <><span className="media-card-count">{activeIndex + 1}/{group.items.length}</span><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}<div className="media-carousel">{!loaded.has(item.mediaId) && <span className="media-card-loader" role="status">Cargando {item.contentType.startsWith('video/') ? 'vídeo' : 'imagen'}…</span>}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? <video controls={slide === activeIndex} preload="auto" src={entry.url} onCanPlay={() => markReady(slide)} /> : <img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} />}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
 }
