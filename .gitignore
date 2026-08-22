@@ -20,3 +20,4 @@ services/*/*.zip
 /login.zip
 /scan-community.zip
 /por-la-cara.zip
+/*.zip
