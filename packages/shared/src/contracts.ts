@@ -6,10 +6,10 @@ export interface SubmitAnswerRequest { userId: string; answer: string; challenge
 export interface SubmitAnswerResponse { correct: boolean; awardedPoints: number; score: number; attempt: ChallengeAttempt; }
 export interface CommunityScanResponse { awardedPoints: number; progress: number; target: number; alreadyScanned?: boolean; scan: CommunityScan; player: Pick<User, 'userId' | 'name' | 'avatarKey'>; community: Affiliation; }
 export interface ClaimPorLaCaraResponse { awardedPoints: number; score: number; attempt: PorLaCaraAttempt; }
-export interface CreateMediaUploadRequest { fileName: string; contentType: string; message?: string; }
+export interface CreateMediaUploadRequest { batchId?: string; fileName: string; contentType: string; message?: string; }
 export interface CreateMediaUploadResponse { mediaId: string; uploadUrl: string; key: string; uploadedAt: string; }
 export interface UpdateMediaRequest { message: string; }
-export interface EventMedia { mediaId: string; authorName: string; message?: string; contentType: string; createdAt: string; url: string; canManage?: boolean; }
+export interface EventMedia { mediaId: string; batchId?: string; authorName: string; message?: string; contentType: string; createdAt: string; url: string; canManage?: boolean; }
 export interface ApiError { code: string; message: string; }
 export interface RankingResponse { scope: RankingScope; entries: RankingEntry[]; affiliationScores: Record<string, number>; frozen: boolean; }
 export type QuestionResponse = Omit<Challenge, 'correctAnswer'> & { correctAnswer?: string };

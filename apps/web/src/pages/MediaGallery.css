@@ -18,7 +18,7 @@
 
 .media-card-actions {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   top: 0.6rem;
   right: 0.6rem;
   display: flex;
@@ -40,6 +40,50 @@
   cursor: pointer;
 }
 
+.media-card-count {
+  position: absolute;
+  z-index: 2;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 3.75rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-strong);
+  box-shadow: 0 2px 8px var(--shadow);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.media-card-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0 0.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-strong);
+  box-shadow: 0 2px 8px var(--shadow);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.media-card-arrow-left {
+  left: 0.6rem;
+}
+
+.media-card-arrow-right {
+  right: 0.6rem;
+}
+
 .media-grid img,
 .media-grid video {
   display: block;
@@ -47,6 +91,32 @@
   aspect-ratio: 1;
   object-fit: cover;
   background: var(--surface-muted);
+}
+
+.media-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.media-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.media-slide.active {
+  z-index: 1;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.media-slide img,
+.media-slide video {
+  height: 100%;
 }
 
 .media-grid p,
