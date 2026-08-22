@@ -9,7 +9,6 @@ import './styles/wedding.css';
 import './styles/wedding-home.css';
 import './styles/game.css';
 import './pages/Ranking.css';
-import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

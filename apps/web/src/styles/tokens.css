@@ -9,19 +9,19 @@
   --color-velvet-blue: #777e88;
 
   /* Tokens semánticos compartidos */
-  --paper: #fff8ed;
+  --paper: color-mix(in srgb, var(--color-sun) 70%, var(--color-blush));
   --ink: var(--color-olive);
-  --ink-strong: #393817;
+  --ink-strong: var(--color-olive);
   --ink-muted: color-mix(in srgb, var(--color-olive) 68%, var(--color-velvet-blue));
   --sage: var(--color-sage);
   --clay: var(--color-peach);
   --line: color-mix(in srgb, var(--color-sage) 48%, var(--paper));
-  --surface: #fffdf8;
+  --surface: color-mix(in srgb, var(--color-sun) 82%, var(--color-blush));
   --surface-soft: color-mix(in srgb, var(--color-sun) 24%, var(--paper));
   --surface-muted: color-mix(in srgb, var(--color-sage) 23%, var(--paper));
-  --overlay: rgb(57 56 23 / 72%);
-  --shadow: rgb(57 56 23 / 16%);
-  --on-accent: #fffdf8;
+  --overlay: color-mix(in srgb, var(--color-olive) 72%, transparent);
+  --shadow: color-mix(in srgb, var(--color-olive) 16%, transparent);
+  --on-accent: var(--color-sun);
   --accent: var(--color-peach);
   --accent-strong: var(--color-mauve);
   --link: var(--color-velvet-blue);
@@ -37,13 +37,13 @@
 }
 
 html[data-theme='dark'] {
-  --paper: #313117;
-  --ink: #fff7e8;
-  --ink-strong: #fffdf8;
+  --paper: color-mix(in srgb, var(--color-olive) 82%, var(--color-velvet-blue));
+  --ink: var(--color-sun);
+  --ink-strong: var(--color-sun);
   --ink-muted: color-mix(in srgb, var(--color-sun) 58%, var(--color-velvet-blue));
-  --surface: #494920;
-  --surface-soft: #41411e;
-  --surface-muted: #55562d;
+  --surface: color-mix(in srgb, var(--color-olive) 68%, var(--color-velvet-blue));
+  --surface-soft: color-mix(in srgb, var(--color-olive) 76%, var(--color-sage));
+  --surface-muted: color-mix(in srgb, var(--color-olive) 55%, var(--color-sage));
   --line: color-mix(in srgb, var(--color-sage) 65%, var(--color-olive));
-  --on-accent: #fffdf8;
+  --on-accent: var(--color-sun);
 }
