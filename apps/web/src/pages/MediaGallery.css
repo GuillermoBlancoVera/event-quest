@@ -40,6 +40,16 @@
   cursor: pointer;
 }
 
+.media-card-actions svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .media-card-count {
   position: absolute;
   z-index: 2;
@@ -183,6 +193,96 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.media-share-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.media-share-loader::after {
+  width: 2.75rem;
+  height: 2.75rem;
+  content: '';
+  border: 0.28rem solid color-mix(in srgb, var(--color-sun) 36%, transparent);
+  border-top-color: var(--color-sun);
+  border-radius: 50%;
+  animation: media-share-spin 0.8s linear infinite;
+}
+
+.yarl__container {
+  background: radial-gradient(circle at top, color-mix(in srgb, var(--color-sage) 68%, var(--color-olive)), var(--color-olive) 72%);
+}
+
+.media-lightbox-single .yarl__navigation_prev,
+.media-lightbox-single .yarl__navigation_next {
+  display: none;
+}
+
+.media-lightbox-thumbnails {
+  position: fixed;
+  z-index: 10;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding: 0.25rem;
+  scrollbar-width: none;
+}
+
+.media-lightbox-thumbnails::-webkit-scrollbar {
+  display: none;
+}
+
+.media-lightbox-thumbnails button {
+  position: relative;
+  flex: 0 0 auto;
+  width: 3.75rem;
+  height: 3.75rem;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 0.45rem;
+  background: var(--color-olive);
+  opacity: 0.48;
+  cursor: pointer;
+  transition: opacity 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.media-lightbox-thumbnails button.active {
+  border-color: var(--color-sun);
+  opacity: 1;
+  transform: translateY(-0.15rem);
+}
+
+.media-lightbox-thumbnails img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-lightbox-thumbnails button span {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 0;
+  height: 0;
+  border-top: 0.45rem solid transparent;
+  border-bottom: 0.45rem solid transparent;
+  border-left: 0.7rem solid var(--color-sun);
+  filter: drop-shadow(0 1px 2px var(--color-olive));
+  transform: translate(-42%, -50%);
+}
+
+@keyframes media-share-spin {
+  to { transform: rotate(360deg); }
 }
 
 .media-video-preview span {
@@ -353,6 +453,82 @@
   color: inherit;
   font-size: 1.8rem;
   cursor: pointer;
+}
+
+.media-choice-modal {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--overlay);
+}
+
+.media-choice-modal > div {
+  position: relative;
+  display: grid;
+  width: min(100%, 360px);
+  gap: 0.8rem;
+  padding: 2rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px var(--shadow);
+}
+
+.media-choice-modal .button {
+  width: 100%;
+  text-align: center;
+}
+
+.media-upload-progress {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  align-content: center;
+  gap: 0.8rem;
+  text-align: center;
+}
+
+.media-upload-progress > span {
+  width: 3rem;
+  height: 3rem;
+  border: 0.3rem solid color-mix(in srgb, var(--color-sage) 32%, transparent);
+  border-top-color: var(--color-sage);
+  border-radius: 50%;
+  animation: media-share-spin 0.8s linear infinite;
+}
+
+.media-upload-progress p,
+.media-upload-progress strong {
+  margin: 0;
+}
+
+.media-upload-progress-bar {
+  position: relative;
+  width: min(100%, 18rem);
+  height: 1.8rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--ink-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-olive) 20%, transparent);
+}
+
+.media-upload-progress-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-peach);
+  transition: width 0.15s linear;
+}
+
+.media-upload-progress-bar b {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 100%;
+  place-items: center;
+  font-size: 0.85rem;
 }
 
 .media-form {

@@ -20,7 +20,7 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     const session = await verifyMediaSession(event.headers.authorization);
     const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': eventKey }, ScanIndexForward: false, Limit: 100 }));
     const visible = (result.Items ?? []).filter(item => item.status === 'UPLOADED');
-    const media = await Promise.all(visible.map(async item => ({ mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt, canManage: item.authorId === session?.sub, url: await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }), { expiresIn: 900 }), thumbnailUrl: item.thumbnailKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.thumbnailKey }), { expiresIn: 900 }) : undefined } satisfies EventMedia)));
+    const media = await Promise.all(visible.map(async item => ({ mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt, canManage: item.authorId === session?.sub, url: await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }), { expiresIn: 900 }), displayUrl: item.displayKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }), { expiresIn: 900 }) : undefined, thumbnailUrl: item.thumbnailKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.thumbnailKey }), { expiresIn: 900 }) : undefined } satisfies EventMedia)));
     return reply(200, media);
   }
 
@@ -33,16 +33,18 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     const extension = body.fileName.trim().split('.').pop()?.replace(/[^a-z0-9]/gi, '').slice(0, 12);
     const key = `media/${now.slice(0, 10)}/${mediaId}${extension ? `.${extension}` : ''}`;
     const thumbnailKey = body.thumbnailContentType === 'image/jpeg' ? `media/thumbnails/${mediaId}.jpg` : undefined;
+    const displayKey = body.displayContentType === 'image/jpeg' && body.contentType.startsWith('image/') ? `media/display/${mediaId}.jpg` : undefined;
     const message = typeof body.message === 'string' && body.message.trim() ? body.message.trim().slice(0, 500) : 'recuerditos';
     const session = await verifyMediaSession(event.headers.authorization);
     const user = session
       ? await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${session.sub}`, SK: 'PROFILE' } }))
       : undefined;
     const author = user?.Item as User | undefined;
-    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, batchId, key, thumbnailKey, authorId: author?.userId, authorName: author?.name ?? 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
+    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, batchId, key, thumbnailKey, displayKey, authorId: author?.userId, authorName: author?.name ?? 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
     const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: key, ContentType: body.contentType }), { expiresIn: 900 });
     const thumbnailUploadUrl = thumbnailKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: thumbnailKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
-    return reply(201, { mediaId, key, uploadedAt: now, uploadUrl, thumbnailUploadUrl });
+    const displayUploadUrl = displayKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: displayKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
+    return reply(201, { mediaId, key, uploadedAt: now, uploadUrl, thumbnailUploadUrl, displayUploadUrl });
   }
 
   const mediaId = event.pathParameters?.id;
@@ -50,7 +52,10 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
     const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': mediaId } }));
     const item = result.Items?.[0];
     if (!item) return reply(404, { message: 'No se ha encontrado la subida.' });
-    try { await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key })); } catch { return reply(409, { message: 'La subida todavía no se ha completado.' }); }
+    try {
+      await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }));
+      if (item.displayKey) await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }));
+    } catch { return reply(409, { message: 'La subida todavía no se ha completado.' }); }
     await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :status, uploadedAt = :now', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':status': 'UPLOADED', ':now': new Date().toISOString() } }));
     return reply(200, { ok: true });
   }
