@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
 import type { RegisterUserRequest, User } from '@event-quest/shared';
+import { createMediaSession } from '../../session.js';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const json = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
@@ -16,5 +17,5 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
   const now = new Date().toISOString();
   const user: User = { userId: crypto.randomUUID(), name, team: input.team?.trim().toLocaleLowerCase() || 'sin afiliación', group: input.group?.trim().toLocaleLowerCase() || 'sin afiliación', affiliationId: input.affiliationId?.trim(), challengeAttempts: [], communityScans: [], porLaCaraAttempts: [], createdAt: now, updatedAt: now };
   await db.send(new PutCommand({ TableName: process.env.USERS_TABLE, Item: { PK: `USER#${user.userId}`, SK: 'PROFILE', entity: 'USER', password, ...user } }));
-  return json(201, user);
+  return json(201, { ...user, sessionToken: await createMediaSession(user) });
 };

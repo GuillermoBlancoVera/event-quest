@@ -26,6 +26,8 @@ locals {
     "POST /admin/assign-user-affiliation" = "admin"
     "POST /media/uploads"                 = "media"
     "POST /media/{id}/complete"           = "media"
+    "PATCH /media/{id}"                   = "media"
+    "DELETE /media/{id}"                  = "media"
     "GET /media"                          = "media"
   }
 }
@@ -36,7 +38,7 @@ resource "aws_apigatewayv2_api" "this" {
 
   cors_configuration {
     allow_origins = var.allowed_origins
-    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_methods = ["DELETE", "GET", "PATCH", "POST", "OPTIONS"]
     allow_headers = ["content-type", "authorization"]
   }
 

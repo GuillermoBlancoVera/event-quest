@@ -6,6 +6,12 @@ locals {
     ManagedBy   = "Terraform"
   }
   services = toset(["register-user", "login", "get-profile", "get-question", "submit-answer", "scan-community", "por-la-cara", "get-ranking", "get-stats", "media", "admin"])
+  media_session_services = toset(["register-user", "login", "media"])
+}
+
+resource "random_password" "media_session_secret" {
+  length  = 64
+  special = true
 }
 
 module "dynamodb" {
@@ -35,7 +41,9 @@ module "lambda" {
     SETTINGS_TABLE     = module.dynamodb.settings_table
     AUDIT_TABLE        = module.dynamodb.audit_table
     AFFILIATIONS_TABLE = module.dynamodb.affiliations_table
-    }, each.value == "media" ? {
+    }, contains(local.media_session_services, each.value) ? {
+    MEDIA_SESSION_SECRET = random_password.media_session_secret.result
+    } : {}, each.value == "media" ? {
     MEDIA_TABLE  = module.dynamodb.media_table
     MEDIA_BUCKET = aws_s3_bucket.assets.bucket
   } : {})

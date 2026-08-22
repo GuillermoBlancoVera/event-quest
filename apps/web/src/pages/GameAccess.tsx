@@ -21,6 +21,7 @@ export function GameAccess() {
     try {
       const user = await api.login({ name, password });
       localStorage.setItem('event-quest-user', user.userId);
+      localStorage.setItem('event-quest-session-token', user.sessionToken);
       navigate(returnTo, { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido iniciar sesión.');
