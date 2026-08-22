@@ -25,6 +25,7 @@ export function Layout() {
       <button className="menu" aria-expanded={open} aria-label="Abrir navegación" onClick={() => setOpen(!open)}>☰</button>
       <nav className={open ? 'open' : ''}>
         {links.map(([id, label]) => <a key={id} href={`#${id}`} onClick={(event) => { event.preventDefault(); setOpen(false); goToSection(id); }}>{label}</a>)}
+        <Link className="game-link" to="/galeria" onClick={() => setOpen(false)}>Galería</Link>
         <Link className="game-link" to="/juego" onClick={() => setOpen(false)}>Jugar</Link>
         <button className="theme" onClick={() => setDark(!dark)} aria-label="Cambiar tema de color">{dark ? '☼' : '◐'}</button>
       </nav>

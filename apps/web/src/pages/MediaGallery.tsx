@@ -11,6 +11,17 @@ export function MediaGallery() {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [media, setMedia] = useState<EventMedia[]>();
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginName, setLoginName] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginStatus, setLoginStatus] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [editing, setEditing] = useState<EventMedia>();
+  const [deleting, setDeleting] = useState<EventMedia>();
+  const [editMessage, setEditMessage] = useState('');
+  const [manageStatus, setManageStatus] = useState('');
+  const [managing, setManaging] = useState(false);
+  const hasSession = Boolean(localStorage.getItem('event-quest-session-token'));
   const load = () => api.getMedia().then(setMedia).catch(error => { setMedia([]); setStatus(error instanceof Error ? error.message : 'No se han podido cargar los recuerdos.'); });
   useEffect(() => { load(); }, []);
 
@@ -21,6 +32,51 @@ export function MediaGallery() {
     setFiles(accepted);
   };
   const close = () => { if (!busy) { setOpen(false); setStatus(''); } };
+  const login = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoggingIn(true);
+    setLoginStatus('');
+    try {
+      const user = await api.login({ name: loginName, password: loginPassword });
+      localStorage.setItem('event-quest-user', user.userId);
+      localStorage.setItem('event-quest-session-token', user.sessionToken);
+      setLoginPassword('');
+      setShowLogin(false);
+    } catch (error) {
+      setLoginStatus(error instanceof Error ? error.message : 'No se ha podido iniciar sesión.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+  const edit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!editing) return;
+    setManaging(true);
+    setManageStatus('');
+    try {
+      await api.updateMedia(editing.mediaId, { message: editMessage });
+      setEditing(undefined);
+      load();
+    } catch (error) {
+      setManageStatus(error instanceof Error ? error.message : 'No se ha podido editar el recuerdo.');
+    } finally {
+      setManaging(false);
+    }
+  };
+  const remove = async () => {
+    if (!deleting) return;
+    setManaging(true);
+    setManageStatus('');
+    try {
+      await api.deleteMedia(deleting.mediaId);
+      setDeleting(undefined);
+      load();
+    } catch (error) {
+      setManageStatus(error instanceof Error ? error.message : 'No se ha podido borrar el recuerdo.');
+    } finally {
+      setManaging(false);
+    }
+  };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!files.length) { setStatus('Elige al menos una foto o vídeo.'); return; }
@@ -41,9 +97,12 @@ export function MediaGallery() {
   };
 
   return <section className="page media-gallery">
-    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{media.map(item => <article key={item.mediaId}>{item.contentType.startsWith('video/') ? <video controls src={item.url} /> : <img src={item.url} alt={item.message || 'Recuerdo de la boda'} />}{item.message && <p>{item.message}</p>}<small>{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>)}</div> : <div className="media-empty"><p className="eyebrow">EL ÁLBUM DE LA BODA</p><h1>Aún no hay recuerdos</h1><p>Estrena la galería con una foto o un vídeo.</p></div>}
+    <header className="media-gallery-header"><p className="eyebrow">RECUERDOS DEL DÍA</p><h1>Galería</h1></header>
+    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{media.map(item => <article key={item.mediaId}>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} aria-label="Editar descripción">✎</button><button type="button" onClick={() => { setDeleting(item); setManageStatus(''); }} aria-label="Borrar recuerdo">🗑</button></div>}{item.contentType.startsWith('video/') ? <video controls src={item.url} /> : <img src={item.url} alt={item.message || 'Recuerdo de la boda'} />}<p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>)}</div> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
     <button className="media-add-button" onClick={() => setOpen(true)} aria-label="Subir fotos o vídeos">+</button>
-    {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div><button className="media-close" onClick={close} aria-label="Cerrar">×</button><p className="eyebrow">COMPARTE UN RECUERDO</p><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. La subida es anónima.</p><form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><label className="button" htmlFor="event-media-file">Seleccionar archivos</label>{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Subiendo…' : `Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form></div></div>}
+    {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div><button className="media-close" onClick={close} aria-label="Cerrar">×</button><p className="eyebrow">COMPARTE UN RECUERDO</p><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><label className="button" htmlFor="event-media-file">Seleccionar archivos</label>{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Subiendo…' : `Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form></div></div>}
+    {editing && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title"><div><button className="media-close" onClick={() => !managing && setEditing(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">EDITAR RECUERDO</p><h2 id="media-edit-title">Cambia la descripción</h2><p className="media-previous-message">Texto actual: “{editing.message || 'recuerditos'}”</p><form className="media-form" onSubmit={edit}><label htmlFor="event-media-edit-message">Nueva descripción<textarea id="event-media-edit-message" maxLength={500} value={editMessage} onChange={event => setEditMessage(event.target.value)} /></label>{manageStatus && <p className="notice">{manageStatus}</p>}<button className="button" disabled={managing}>{managing ? 'Guardando…' : 'Guardar cambios'}</button></form></div></div>}
+    {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Dejará de aparecer en la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
   </section>;
 }
 
