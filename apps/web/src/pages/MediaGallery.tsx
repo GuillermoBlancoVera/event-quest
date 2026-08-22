@@ -1,5 +1,10 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import type { EventMedia } from '@event-quest/shared';
+import Lightbox, { type Slide } from 'yet-another-react-lightbox';
+import Share from 'yet-another-react-lightbox/plugins/share';
+import Video from 'yet-another-react-lightbox/plugins/video';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import 'yet-another-react-lightbox/styles.css';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/PageLoader';
 import './MediaGallery.css';
@@ -18,6 +23,7 @@ export function MediaGallery() {
   const [loggingIn, setLoggingIn] = useState(false);
   const [editing, setEditing] = useState<EventMedia>();
   const [deleting, setDeleting] = useState<EventMedia>();
+  const [previewing, setPreviewing] = useState<{ items: EventMedia[]; index: number }>();
   const [editMessage, setEditMessage] = useState('');
   const [manageStatus, setManageStatus] = useState('');
   const [managing, setManaging] = useState(false);
@@ -103,12 +109,13 @@ export function MediaGallery() {
   };
 
   return <section className="page media-gallery">
-    <header className="media-gallery-header"><p className="eyebrow">RECUERDOS DEL DÍA</p><h1>Galería</h1></header>
-    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} />)}</div> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
+    <header className="media-gallery-header"><h1>Galería</h1></header>
+    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} onPreview={(items, index) => setPreviewing({ items, index })} />)}</div> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
     <button className="media-add-button" onClick={() => setOpen(true)} aria-label="Subir fotos o vídeos">+</button>
     {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div><button className="media-close" onClick={close} aria-label="Cerrar">×</button><p className="eyebrow">COMPARTE UN RECUERDO</p><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><label className="button" htmlFor="event-media-file">Seleccionar archivos</label>{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Subiendo…' : `Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form></div></div>}
     {editing && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title"><div><button className="media-close" onClick={() => !managing && setEditing(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">EDITAR RECUERDO</p><h2 id="media-edit-title">Cambia la descripción</h2><p className="media-previous-message">Texto actual: “{editing.message || 'recuerditos'}”</p><form className="media-form" onSubmit={edit}><label htmlFor="event-media-edit-message">Nueva descripción<textarea id="event-media-edit-message" maxLength={500} value={editMessage} onChange={event => setEditMessage(event.target.value)} /></label>{manageStatus && <p className="notice">{manageStatus}</p>}<button className="button" disabled={managing}>{managing ? 'Guardando…' : 'Guardar cambios'}</button></form></div></div>}
     {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Dejará de aparecer en la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
+    {previewing && <Lightbox open close={() => setPreviewing(undefined)} index={previewing.index} plugins={[Video, Zoom, Share]} labels={{ Share: 'Compartir' }} share={{ share: ({ slide }) => { void shareMedia(slide); } }} controller={{ closeOnPullDown: true }} carousel={{ imageFit: 'contain', preload: 1 }} slides={previewing.items.map(item => item.contentType.startsWith('video/') ? { type: 'video' as const, poster: item.thumbnailUrl, sources: [{ src: item.url, type: item.contentType }], controls: true, playsInline: true } : { src: item.url, alt: item.message || 'Recuerdo de la boda' })} />}
   </section>;
 }
 
@@ -118,6 +125,24 @@ const extension = (file: File) => file.name.toLocaleLowerCase().split('.').pop()
 const isMediaFile = (file: File) => file.type.startsWith('image/') || file.type.startsWith('video/') || imageExtensions.has(extension(file)) || videoExtensions.has(extension(file));
 const mediaType = (file: File) => file.type || (videoExtensions.has(extension(file)) ? 'video/*' : 'image/*');
 const createBatchId = () => typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+const mediaSource = (slide: Slide) => 'src' in slide ? slide.src : slide.sources[0]?.src;
+const extensionFor = (contentType: string) => ({ 'image/jpeg': 'jpg', 'image/heic': 'heic', 'image/heif': 'heif', 'video/quicktime': 'mov', 'video/x-matroska': 'mkv' }[contentType] ?? contentType.split('/')[1]?.split('+')[0] ?? 'archivo');
+const getMediaFile = async (slide: Slide) => {
+  const source = mediaSource(slide);
+  if (!source) throw new Error('No se ha encontrado el archivo.');
+  const response = await fetch(source);
+  if (!response.ok) throw new Error('No se ha podido descargar el archivo.');
+  const blob = await response.blob();
+  const contentType = blob.type || ('sources' in slide ? slide.sources[0]?.type : '') || 'application/octet-stream';
+  return new File([blob], `recuerdo-${Date.now()}.${extensionFor(contentType)}`, { type: contentType });
+};
+const shareMedia = async (slide: Slide) => {
+  const file = await getMediaFile(slide);
+  if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Recuerdo de la boda' }); return; }
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(file); link.download = file.name; link.click();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 30_000);
+};
 const createVideoThumbnail = (file: File): Promise<Blob | undefined> => new Promise(resolve => {
   const video = document.createElement('video');
   const url = URL.createObjectURL(file);
@@ -141,7 +166,7 @@ const groupMedia = (media: EventMedia[]): MediaGroup[] => {
   return [...groups.entries()].map(([id, items]) => ({ id, items: items.sort((a, b) => a.createdAt.localeCompare(b.createdAt)) }));
 };
 
-function MediaCard({ group, onEdit, onDelete }: { group: MediaGroup; onEdit: (item: EventMedia) => void; onDelete: (item: EventMedia) => void }) {
+function MediaCard({ group, onEdit, onDelete, onPreview }: { group: MediaGroup; onEdit: (item: EventMedia) => void; onDelete: (item: EventMedia) => void; onPreview: (items: EventMedia[], index: number) => void }) {
   const [index, setIndex] = useState(0);
   const [loaded, setLoaded] = useState<Set<string>>(new Set());
   const [playingVideo, setPlayingVideo] = useState<string>();
@@ -154,5 +179,5 @@ function MediaCard({ group, onEdit, onDelete }: { group: MediaGroup; onEdit: (it
   };
   const change = (direction: number) => { setPlayingVideo(undefined); setIndex((activeIndex + direction + group.items.length) % group.items.length); };
 
-  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <><span className="media-card-count">{activeIndex + 1}/{group.items.length}</span><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}<div className="media-carousel">{!item.contentType.startsWith('video/') && !loaded.has(item.mediaId) && <span className="media-card-loader" role="status" aria-label="Cargando" />}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? playingVideo === entry.mediaId ? <video controls autoPlay preload="auto" src={entry.url} /> : <button className="media-video-preview" type="button" onClick={() => setPlayingVideo(entry.mediaId)}>{entry.thumbnailUrl && <img loading="eager" src={entry.thumbnailUrl} alt="Vista previa del vídeo" onLoad={() => markReady(slide)} />}<span aria-hidden="true" /></button> : <img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} />}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
+  return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción">✎</button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo">🗑</button></div>}{multiple && <span className="media-card-count">{activeIndex + 1}/{group.items.length}</span>}<div className="media-carousel">{multiple && <><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}{!item.contentType.startsWith('video/') && !loaded.has(item.mediaId) && <span className="media-card-loader" role="status" aria-label="Cargando" />}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? playingVideo === entry.mediaId ? <video controls autoPlay preload="auto" src={entry.url} /> : <button className="media-video-preview" type="button" onClick={() => setPlayingVideo(entry.mediaId)}>{entry.thumbnailUrl && <img loading="eager" src={entry.thumbnailUrl} alt="Vista previa del vídeo" onLoad={() => markReady(slide)} />}<span aria-hidden="true" /></button> : <button className="media-image-preview" type="button" onClick={() => onPreview(group.items, slide)}><img loading="eager" src={entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} /></button>}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
 }

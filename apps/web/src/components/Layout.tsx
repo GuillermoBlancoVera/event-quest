@@ -19,7 +19,6 @@ export function Layout() {
   };
 
   return <>
-    <div className="garland" aria-hidden="true"><span>✦</span><span>✦</span><span>✦</span><span>✦</span><span>✦</span></div>
     <header className="site-header">
       <Link className="brand" to="/">La Boda de <i>Sara &amp; Guille</i></Link>
       <button className="menu" aria-expanded={open} aria-label="Abrir navegación" onClick={() => setOpen(!open)}>☰</button>
