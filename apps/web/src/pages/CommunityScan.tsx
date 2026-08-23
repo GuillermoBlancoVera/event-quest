@@ -14,7 +14,7 @@ export function CommunityScan() {
   const location = useLocation();
   const [result, setResult] = useState<CommunityScanResponse>();
   const [error, setError] = useState('');
-  const requestedPlayerId = useRef<string>();
+  const requestedPlayerId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!userId || !id || requestedPlayerId.current === id) return;

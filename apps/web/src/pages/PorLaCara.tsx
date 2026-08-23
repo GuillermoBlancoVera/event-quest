@@ -13,7 +13,7 @@ export function PorLaCara() {
   const [challenge, setChallenge] = useState<PorLaCaraChallenge>();
   const [attempt, setAttempt] = useState<PorLaCaraAttempt>();
   const [message, setMessage] = useState('');
-  const requestedId = useRef<string>();
+  const requestedId = useRef<string | undefined>(undefined);
   const fromChallenges = Boolean(location.state?.fromChallenges);
 
   useEffect(() => {

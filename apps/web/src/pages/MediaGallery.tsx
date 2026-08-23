@@ -31,7 +31,7 @@ export function MediaGallery() {
   const [previewing, setPreviewing] = useState<{ items: EventMedia[]; index: number }>();
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const uploadAbortRef = useRef<AbortController>();
+  const uploadAbortRef = useRef<AbortController | undefined>(undefined);
   const [sharing, setSharing] = useState(false);
   const [editMessage, setEditMessage] = useState('');
   const [manageStatus, setManageStatus] = useState('');
