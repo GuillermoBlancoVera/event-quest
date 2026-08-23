@@ -648,6 +648,25 @@
   gap: 0.75rem;
 }
 
+.media-confirm-message {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.media-confirm-message textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-strong);
+  font: inherit;
+  resize: vertical;
+}
+
 .media-confirm-actions > button:not(.button) {
   border: 0;
   background: transparent;
