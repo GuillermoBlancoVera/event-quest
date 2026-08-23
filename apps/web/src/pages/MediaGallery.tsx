@@ -1,8 +1,9 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import type { EventMedia } from '@event-quest/shared';
 import Lightbox, { type Slide } from 'yet-another-react-lightbox';
 import Share from 'yet-another-react-lightbox/plugins/share';
 import Video from 'yet-another-react-lightbox/plugins/video';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import 'yet-another-react-lightbox/styles.css';
 import { api } from '../lib/api';
 import { PageLoader } from '../components/PageLoader';
@@ -18,6 +19,8 @@ export function MediaGallery() {
   const [open, setOpen] = useState(false);
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   const [media, setMedia] = useState<EventMedia[]>();
+  const [nextMediaCursor, setNextMediaCursor] = useState<string>();
+  const [loadingMoreMedia, setLoadingMoreMedia] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginName, setLoginName] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -27,6 +30,7 @@ export function MediaGallery() {
   const [deleting, setDeleting] = useState<EventMedia>();
   const [previewing, setPreviewing] = useState<{ items: EventMedia[]; index: number }>();
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const uploadAbortRef = useRef<AbortController>();
   const [sharing, setSharing] = useState(false);
   const [editMessage, setEditMessage] = useState('');
@@ -35,8 +39,28 @@ export function MediaGallery() {
   const hasSession = Boolean(localStorage.getItem('event-quest-session-token'));
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isAndroid = /Android/i.test(navigator.userAgent);
-  const load = () => api.getMedia().then(setMedia).catch(error => { setMedia([]); setStatus(error instanceof Error ? error.message : 'No se han podido cargar los recuerdos.'); });
+  const load = () => api.getMedia().then(page => { setMedia(page.items); setNextMediaCursor(page.nextCursor); }).catch(error => { setMedia([]); setNextMediaCursor(undefined); setStatus(error instanceof Error ? error.message : 'No se han podido cargar los recuerdos.'); });
+  const loadMore = useCallback(async () => {
+    if (!nextMediaCursor || loadingMoreMedia) return;
+    setLoadingMoreMedia(true);
+    try {
+      const page = await api.getMedia(nextMediaCursor);
+      setMedia(current => [...(current ?? []), ...page.items.filter(item => !current?.some(existing => existing.mediaId === item.mediaId))]);
+      setNextMediaCursor(page.nextCursor);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'No se han podido cargar más recuerdos.');
+    } finally {
+      setLoadingMoreMedia(false);
+    }
+  }, [loadingMoreMedia, nextMediaCursor]);
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !nextMediaCursor) return;
+    const observer = new IntersectionObserver(entries => { if (entries[0]?.isIntersecting) void loadMore(); }, { rootMargin: '240px' });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadMore, nextMediaCursor]);
   useEffect(() => { previewing && thumbnailRefs.current[previewing.index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, [previewing?.index]);
 
   const choose = (event: ChangeEvent<HTMLInputElement>) => {
@@ -146,13 +170,13 @@ export function MediaGallery() {
 
   return <section className="page media-gallery">
     <header className="media-gallery-header"><h1>Galería</h1></header>
-    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} onPreview={(items, index) => setPreviewing({ items, index })} />)}</div> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
+    {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <><div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} onPreview={(items, index) => setPreviewing({ items, index })} />)}</div>{nextMediaCursor && <div className={loadingMoreMedia ? 'media-load-more is-loading' : 'media-load-more'} ref={loadMoreRef} role={loadingMoreMedia ? 'status' : undefined} aria-label={loadingMoreMedia ? 'Cargando más recuerdos' : undefined}>{loadingMoreMedia && <><span aria-hidden="true" />Cargando recuerdos…</>}</div>}</> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
     <button className="media-add-button" onClick={() => setOpen(true)} aria-label="Subir fotos o vídeos">+</button>
     {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div>{busy ? <div className="media-upload-progress" role="status"><span aria-hidden="true" /><p id="media-upload-title">Subiendo archivos</p><strong>{status}</strong><div className="media-upload-progress-bar" aria-label={`${uploadProgress}% completado`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress} role="progressbar"><span style={{ width: `${uploadProgress}%` }} /><b>{uploadProgress}%</b></div><button type="button" onClick={cancelUpload}>Cancelar subida</button></div> : <><button className="media-close" onClick={close} aria-label="Cerrar">×</button><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. Todos serán visibles para las personas de la boda. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><input id="event-media-camera" type="file" accept="image/*" capture="environment" onChange={choose} /><input id="event-media-video-camera" type="file" accept="video/*" capture="environment" onChange={choose} />{isAndroid ? <button className="button" type="button" onClick={() => setAndroidPickerOpen(true)}>Seleccionar archivos</button> : <label className="button" htmlFor="event-media-file">Seleccionar archivos</label>}{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{`Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form>{isAndroid && androidPickerOpen && <div className="media-choice-modal" role="dialog" aria-modal="true" aria-label="Elegir archivo"><div><button className="media-close" type="button" onClick={() => setAndroidPickerOpen(false)} aria-label="Cerrar">×</button><h2>¿Qué quieres subir?</h2><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-file')?.click(); }}>Elegir del carrete</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-camera')?.click(); }}>Hacer foto</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-video-camera')?.click(); }}>Grabar vídeo</button></div></div>}</>}</div></div>}
     {confirmWithoutMessage && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-empty-message-title"><div><button className="media-close" type="button" onClick={() => setConfirmWithoutMessage(false)} aria-label="Cerrar">×</button><h2 id="media-empty-message-title">¿Subir sin descripción?</h2><p>Se publicará como “recuerditos”.</p><div className="media-confirm-actions"><button className="button" type="button" onClick={() => { setConfirmWithoutMessage(false); void uploadFiles(); }}>Sí, subir</button><button type="button" onClick={() => setConfirmWithoutMessage(false)}>Volver a editar</button></div></div></div>}
     {editing && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title"><div><button className="media-close" onClick={() => !managing && setEditing(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">EDITAR RECUERDO</p><h2 id="media-edit-title">Cambia la descripción</h2><p className="media-previous-message">Texto actual: “{editing.message || 'recuerditos'}”</p><form className="media-form" onSubmit={edit}><label htmlFor="event-media-edit-message">Nueva descripción<textarea id="event-media-edit-message" maxLength={500} value={editMessage} onChange={event => setEditMessage(event.target.value)} /></label>{manageStatus && <p className="notice">{manageStatus}</p>}<button className="button" disabled={managing}>{managing ? 'Guardando…' : 'Guardar cambios'}</button></form></div></div>}
     {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Dejará de aparecer en la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
-    {previewing && <Lightbox open close={() => setPreviewing(undefined)} index={previewing.index} on={{ view: ({ index }) => setPreviewing(current => current?.index === index ? current : current ? { ...current, index } : current) }} className={previewing.items.length < 2 ? 'media-lightbox-single' : undefined} plugins={[Video, Share]} labels={{ Share: 'Compartir' }} styles={{ root: { '--yarl__color_backdrop': 'var(--color-olive)', '--yarl__color_button': 'var(--color-sun)', '--yarl__color_button_active': 'var(--color-peach)', '--yarl__slide_icon_loading_color': 'var(--color-sun)', '--yarl__button_filter': 'none' }, slide: { paddingTop: '4.5rem', paddingBottom: '6.5rem' } }} render={{ controls: () => <>{sharing && <span className="media-share-loader" role="status" aria-label="Preparando archivo para compartir" />}{previewing.items.length > 1 && <div className="media-lightbox-thumbnails" aria-label="Archivos de esta subida">{previewing.items.map((item, index) => <button ref={element => { thumbnailRefs.current[index] = element; }} className={index === previewing.index ? 'active' : ''} type="button" key={item.mediaId} onClick={() => setPreviewing(current => current ? { ...current, index } : current)} aria-label={`Ver archivo ${index + 1}`} aria-current={index === previewing.index ? true : undefined}>{item.contentType.startsWith('video/') ? <>{item.thumbnailUrl && <img src={item.thumbnailUrl} alt="" />}<span aria-hidden="true" /></> : <img src={item.displayUrl ?? item.url} alt="" />}</button>)}</div>}</> }} share={{ share: ({ slide }) => { setSharing(true); void shareMedia(slide).catch(() => undefined).finally(() => setSharing(false)); } }} controller={{ closeOnPullDown: true, disableSwipeNavigation: isIos }} carousel={{ imageFit: 'contain', preload: 1, finite: previewing.items.length < 2 }} slides={previewing.items.map(item => item.contentType.startsWith('video/') ? { type: 'video' as const, poster: item.thumbnailUrl, sources: [{ src: item.url, type: item.contentType }], controls: true, playsInline: true, share: item.url } : { src: item.displayUrl ?? item.url, alt: item.message || 'Recuerdo de la boda', share: item.url })} />}
+    {previewing && <Lightbox open close={() => setPreviewing(undefined)} index={previewing.index} on={{ view: ({ index }) => setPreviewing(current => current?.index === index ? current : current ? { ...current, index } : current) }} className={`media-lightbox${previewing.items.length < 2 ? ' media-lightbox-single' : ''}`} plugins={[Video, Zoom, Share]} labels={{ Share: 'Compartir' }} styles={{ root: { '--yarl__color_backdrop': 'var(--color-olive)', '--yarl__color_button': 'var(--color-sun)', '--yarl__color_button_active': 'var(--color-peach)', '--yarl__slide_icon_loading_color': 'var(--color-sun)', '--yarl__button_filter': 'none' }, slide: { paddingTop: '4.5rem', paddingBottom: '6.5rem' } }} render={{ buttonZoom: () => null, controls: () => <>{sharing && <span className="media-share-loader" role="status" aria-label="Preparando archivo para compartir" />}{previewing.items.length > 1 && <div className="media-lightbox-thumbnails" aria-label="Archivos de esta subida">{previewing.items.map((item, index) => <button ref={element => { thumbnailRefs.current[index] = element; }} className={index === previewing.index ? 'active' : ''} type="button" key={item.mediaId} onClick={() => setPreviewing(current => current ? { ...current, index } : current)} aria-label={`Ver archivo ${index + 1}`} aria-current={index === previewing.index ? true : undefined}>{item.contentType.startsWith('video/') ? <>{item.thumbnailUrl && <img src={item.thumbnailUrl} alt="" />}<span aria-hidden="true" /></> : <img src={item.displayUrl ?? item.url} alt="" />}</button>)}</div>}</> }} zoom={{ scrollToZoom: true }} share={{ share: ({ slide }) => { setSharing(true); void shareMedia(slide, () => setSharing(false)).catch(() => undefined).finally(() => setSharing(false)); } }} controller={{ closeOnPullDown: true, disableSwipeNavigation: isIos }} carousel={{ imageFit: 'contain', preload: 1, finite: previewing.items.length < 2 }} slides={previewing.items.map(item => item.contentType.startsWith('video/') ? { type: 'video' as const, poster: item.thumbnailUrl, sources: [{ src: item.url, type: item.contentType }], controls: true, playsInline: true, share: item.url } : { src: item.displayUrl ?? item.url, alt: item.message || 'Recuerdo de la boda', share: item.url })} />}
   </section>;
 }
 
@@ -207,9 +231,11 @@ const getMediaFile = async (slide: Slide) => {
   const contentType = blob.type || ('sources' in slide ? slide.sources[0]?.type : '') || 'application/octet-stream';
   return new File([blob], `recuerdo-${Date.now()}.${extensionFor(contentType)}`, { type: contentType });
 };
-const shareMedia = async (slide: Slide) => {
+const shareMedia = async (slide: Slide, onNativeShareStart?: () => void) => {
   const file = await getMediaFile(slide);
-  if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Recuerdo de la boda' }); return; }
+  if (navigator.canShare?.({ files: [file] })) { const share = navigator.share({ files: [file] }); onNativeShareStart?.(); await share; return; }
+  const source = mediaSource(slide);
+  if (navigator.share && source) { const share = navigator.share({ url: source }); onNativeShareStart?.(); await share; return; }
   const link = document.createElement('a');
   link.href = URL.createObjectURL(file); link.download = file.name; link.click();
   window.setTimeout(() => URL.revokeObjectURL(link.href), 30_000);

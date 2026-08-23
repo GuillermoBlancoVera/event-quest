@@ -3,14 +3,22 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCom
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { CancelMediaUploadsRequest, CreateMediaUploadRequest, EventMedia, User } from '@event-quest/shared';
+import type { CancelMediaUploadsRequest, CreateMediaUploadRequest, EventMedia, MediaPage, User } from '@event-quest/shared';
 import { verifyMediaSession } from '../../session.js';
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
 const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const eventKey = 'EVENT#WEDDING';
+const mediaPageSize = 10;
 const isMedia = (contentType: unknown) => typeof contentType === 'string' && /^(image|video)\/(?:[\w.+-]+|\*)$/i.test(contentType);
+const parseCursor = (cursor?: string) => {
+  if (!cursor) return undefined;
+  try {
+    const key = JSON.parse(cursor) as { PK?: unknown; SK?: unknown };
+    return key.PK === eventKey && typeof key.SK === 'string' ? { PK: key.PK, SK: key.SK } : undefined;
+  } catch { return undefined; }
+};
 
 export const handler: APIGatewayProxyHandlerV2 = async event => {
   const method = event.requestContext.http.method;
@@ -18,10 +26,13 @@ export const handler: APIGatewayProxyHandlerV2 = async event => {
 
   if (method === 'GET') {
     const session = await verifyMediaSession(event.headers.authorization);
-    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': eventKey }, ScanIndexForward: false, Limit: 100 }));
+    const paginated = event.queryStringParameters?.limit === String(mediaPageSize);
+    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': eventKey }, ScanIndexForward: false, Limit: paginated ? mediaPageSize : 100, ExclusiveStartKey: paginated ? parseCursor(event.queryStringParameters?.cursor) : undefined }));
     const visible = (result.Items ?? []).filter(item => item.status === 'UPLOADED');
-    const media = await Promise.all(visible.map(async item => ({ mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt, canManage: item.authorId === session?.sub, url: await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }), { expiresIn: 900 }), displayUrl: item.displayKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }), { expiresIn: 900 }) : undefined, thumbnailUrl: item.thumbnailKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.thumbnailKey }), { expiresIn: 900 }) : undefined } satisfies EventMedia)));
-    return reply(200, media);
+    const items = await Promise.all(visible.map(async item => ({ mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt, canManage: item.authorId === session?.sub, url: await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }), { expiresIn: 900 }), displayUrl: item.displayKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }), { expiresIn: 900 }) : undefined, thumbnailUrl: item.thumbnailKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.thumbnailKey }), { expiresIn: 900 }) : undefined } satisfies EventMedia)));
+    if (!paginated) return reply(200, items);
+    const page: MediaPage = { items, nextCursor: result.LastEvaluatedKey ? JSON.stringify(result.LastEvaluatedKey) : undefined };
+    return reply(200, page);
   }
 
   const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest & CancelMediaUploadsRequest;
