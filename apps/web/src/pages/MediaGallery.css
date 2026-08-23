@@ -243,6 +243,10 @@
   background: radial-gradient(circle at top, color-mix(in srgb, var(--color-sage) 68%, var(--color-olive)), var(--color-olive) 72%);
 }
 
+.media-lightbox .yarl__container {
+  opacity: var(--yarl__pull_opacity, 1);
+}
+
 .media-lightbox-single .yarl__navigation_prev,
 .media-lightbox-single .yarl__navigation_next {
   display: none;
