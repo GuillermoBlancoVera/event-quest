@@ -36,7 +36,7 @@
 
 .affiliation-score {
   margin: .4rem 0 0;
-  color: var(--color-honey);
+  color: var(--color-butter);
   font-weight: 700;
 }
 
@@ -56,7 +56,7 @@
 }
 
 .affiliation-cabins .ranking-affiliation-icon {
-  color: var(--color-honey);
+  color: var(--color-butter);
   background: color-mix(in srgb, var(--color-cream) 12%, transparent);
   width: 64px;
   height: 64px;

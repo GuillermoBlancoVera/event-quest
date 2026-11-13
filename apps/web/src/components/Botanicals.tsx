@@ -6,7 +6,7 @@ import './Botanicals.css';
  * Todo es decorativo (aria-hidden) y toma sus colores de la paleta de tokens.css.
  */
 
-type Tone = 'terracotta' | 'rust' | 'mustard' | 'honey' | 'burgundy' | 'sage' | 'moss' | 'blush' | 'cream';
+type Tone = 'peach' | 'apricot' | 'sunflower' | 'butter' | 'velvet' | 'green' | 'fern' | 'pink' | 'cream';
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
@@ -44,7 +44,7 @@ type SprigProps = {
 };
 
 /** Una rama curva con hojas alternas o con bayas. */
-function Sprig({ x, y, angle, length, bend = 0, leaves = 6, leafSize = 20, tone = 'sage', altTone, berries = false }: SprigProps) {
+function Sprig({ x, y, angle, length, bend = 0, leaves = 6, leafSize = 20, tone = 'green', altTone, berries = false }: SprigProps) {
   const point = (t: number) => ({ px: 2 * (1 - t) * t * bend, py: -length * t });
   const tangent = (t: number) => Math.atan2(2 * bend * (1 - 2 * t), length) * 180 / Math.PI;
   const items: ReactNode[] = [];
@@ -87,20 +87,20 @@ function Wheat({ x, y, angle, length, bend = 0 }: { x: number; y: number; angle:
     const py = -length * t;
     const lean = Math.atan2(2 * bend * (1 - 2 * t), length) * 180 / Math.PI;
     for (const side of [-1, 1]) {
-      grains.push(<path key={`${index}${side}`} className="bot-fill-mustard" transform={`translate(${round(px)} ${round(py)}) rotate(${round(lean + side * 26)})`} d={leafPath(length * 0.13, length * 0.032)} />);
+      grains.push(<path key={`${index}${side}`} className="bot-fill-sunflower" transform={`translate(${round(px)} ${round(py)}) rotate(${round(lean + side * 26)})`} d={leafPath(length * 0.13, length * 0.032)} />);
     }
   }
   return <g transform={`translate(${x} ${y}) rotate(${angle})`}>
     <path className="bot-stem bot-stem-wheat" d={`M0 0Q${round(bend)} ${round(-length / 2)} 0 ${-length}`} />
     {grains}
-    <path className="bot-fill-honey" transform={`translate(0 ${round(-length * 0.97)})`} d={leafPath(length * 0.14, length * 0.034)} />
+    <path className="bot-fill-butter" transform={`translate(0 ${round(-length * 0.97)})`} d={leafPath(length * 0.14, length * 0.034)} />
   </g>;
 }
 
 type FlowerProps = { x: number; y: number; r: number; variant?: 'dahlia' | 'cosmos' | 'bud'; outer?: Tone; inner?: Tone; center?: Tone; rotate?: number };
 
 /** Flor vista desde arriba: dalia (tres coronas de pétalos), cosmos (pétalos anchos) o capullo. */
-function Flower({ x, y, r, variant = 'dahlia', outer = 'terracotta', inner = 'rust', center = 'burgundy', rotate = 0 }: FlowerProps) {
+function Flower({ x, y, r, variant = 'dahlia', outer = 'peach', inner = 'apricot', center = 'velvet', rotate = 0 }: FlowerProps) {
   const ring = (count: number, length: number, width: number, tone: Tone, offset = 0) => Array.from({ length: count }, (_, index) =>
     <path key={`${tone}${count}${index}`} className={`bot-fill-${tone} bot-petal`} transform={`rotate(${round(offset + index * 360 / count)})`} d={petalPath(length, width)} />);
 
@@ -108,7 +108,7 @@ function Flower({ x, y, r, variant = 'dahlia', outer = 'terracotta', inner = 'ru
     {variant === 'dahlia' && <>
       {ring(12, r, r * 0.27, outer)}
       {ring(10, r * 0.7, r * 0.22, inner, 18)}
-      {ring(8, r * 0.42, r * 0.16, 'honey', 8)}
+      {ring(8, r * 0.42, r * 0.16, 'butter', 8)}
       <circle className={`bot-fill-${center}`} r={round(r * 0.14)} />
     </>}
     {variant === 'cosmos' && <>
@@ -129,22 +129,22 @@ type SvgProps = { className?: string };
 /** Ramo horizontal: corona la tarjeta de la portada y los paneles del juego. */
 export function Bouquet({ className = '' }: SvgProps) {
   return <svg className={`botanical ${className}`} viewBox="-190 -92 380 126" aria-hidden="true" focusable="false">
-    <Sprig x={-18} y={8} angle={-82} length={158} bend={-26} leaves={8} leafSize={25} tone="sage" altTone="moss" />
-    <Sprig x={18} y={8} angle={82} length={158} bend={26} leaves={8} leafSize={25} tone="sage" altTone="moss" />
-    <Sprig x={-12} y={6} angle={-58} length={118} bend={-16} leaves={6} leafSize={22} tone="moss" altTone="sage" />
-    <Sprig x={12} y={6} angle={58} length={118} bend={16} leaves={6} leafSize={22} tone="moss" altTone="sage" />
+    <Sprig x={-18} y={8} angle={-82} length={158} bend={-26} leaves={8} leafSize={25} tone="green" altTone="fern" />
+    <Sprig x={18} y={8} angle={82} length={158} bend={26} leaves={8} leafSize={25} tone="green" altTone="fern" />
+    <Sprig x={-12} y={6} angle={-58} length={118} bend={-16} leaves={6} leafSize={22} tone="fern" altTone="green" />
+    <Sprig x={12} y={6} angle={58} length={118} bend={16} leaves={6} leafSize={22} tone="fern" altTone="green" />
     <Wheat x={-10} y={4} angle={-36} length={104} bend={-12} />
     <Wheat x={10} y={4} angle={36} length={104} bend={12} />
-    <Sprig x={-16} y={8} angle={-100} length={104} bend={14} leaves={5} leafSize={19} tone="rust" altTone="mustard" />
-    <Sprig x={16} y={8} angle={100} length={104} bend={-14} leaves={5} leafSize={19} tone="rust" altTone="mustard" />
-    <Sprig x={-8} y={2} angle={-68} length={92} bend={10} leaves={6} leafSize={15} tone="burgundy" altTone="terracotta" berries />
-    <Sprig x={8} y={2} angle={68} length={92} bend={-10} leaves={6} leafSize={15} tone="burgundy" altTone="terracotta" berries />
-    <Sprig x={-6} y={0} angle={-14} length={66} bend={-8} leaves={4} leafSize={17} tone="sage" />
-    <Sprig x={6} y={0} angle={14} length={66} bend={8} leaves={4} leafSize={17} tone="sage" />
-    <Flower x={-88} y={2} r={13} variant="bud" outer="blush" center="mustard" rotate={12} />
-    <Flower x={88} y={2} r={13} variant="bud" outer="mustard" center="burgundy" rotate={-20} />
-    <Flower x={-52} y={-6} r={24} variant="cosmos" outer="burgundy" inner="terracotta" center="mustard" rotate={8} />
-    <Flower x={52} y={-6} r={22} variant="cosmos" outer="blush" inner="rust" center="burgundy" rotate={-14} />
+    <Sprig x={-16} y={8} angle={-100} length={104} bend={14} leaves={5} leafSize={19} tone="apricot" altTone="sunflower" />
+    <Sprig x={16} y={8} angle={100} length={104} bend={-14} leaves={5} leafSize={19} tone="apricot" altTone="sunflower" />
+    <Sprig x={-8} y={2} angle={-68} length={92} bend={10} leaves={6} leafSize={15} tone="velvet" altTone="peach" berries />
+    <Sprig x={8} y={2} angle={68} length={92} bend={-10} leaves={6} leafSize={15} tone="velvet" altTone="peach" berries />
+    <Sprig x={-6} y={0} angle={-14} length={66} bend={-8} leaves={4} leafSize={17} tone="green" />
+    <Sprig x={6} y={0} angle={14} length={66} bend={8} leaves={4} leafSize={17} tone="green" />
+    <Flower x={-88} y={2} r={13} variant="bud" outer="pink" center="sunflower" rotate={12} />
+    <Flower x={88} y={2} r={13} variant="bud" outer="sunflower" center="velvet" rotate={-20} />
+    <Flower x={-52} y={-6} r={24} variant="cosmos" outer="velvet" inner="peach" center="sunflower" rotate={8} />
+    <Flower x={52} y={-6} r={22} variant="cosmos" outer="pink" inner="apricot" center="velvet" rotate={-14} />
     <Flower x={0} y={-12} r={36} variant="dahlia" />
   </svg>;
 }
@@ -153,28 +153,28 @@ export function Bouquet({ className = '' }: SvgProps) {
 export function FloralDivider({ className = '' }: SvgProps) {
   return <svg className={`botanical floral-divider ${className}`} viewBox="0 0 280 44" aria-hidden="true" focusable="false">
     <path className="bot-rule" d="M4 22H92M188 22H276" />
-    <circle className="bot-fill-mustard" cx="4" cy="22" r="2" />
-    <circle className="bot-fill-mustard" cx="276" cy="22" r="2" />
-    <Sprig x={130} y={22} angle={-90} length={40} bend={-5} leaves={4} leafSize={13} tone="sage" altTone="moss" />
-    <Sprig x={150} y={22} angle={90} length={40} bend={5} leaves={4} leafSize={13} tone="sage" altTone="moss" />
-    <Flower x={140} y={22} r={13} variant="cosmos" outer="terracotta" inner="rust" center="burgundy" />
+    <circle className="bot-fill-sunflower" cx="4" cy="22" r="2" />
+    <circle className="bot-fill-sunflower" cx="276" cy="22" r="2" />
+    <Sprig x={130} y={22} angle={-90} length={40} bend={-5} leaves={4} leafSize={13} tone="green" altTone="fern" />
+    <Sprig x={150} y={22} angle={90} length={40} bend={5} leaves={4} leafSize={13} tone="green" altTone="fern" />
+    <Flower x={140} y={22} r={13} variant="cosmos" outer="peach" inner="apricot" center="velvet" />
   </svg>;
 }
 
 /** Ramo que nace de una esquina (abajo a la izquierda). Se voltea con CSS para el resto de esquinas. */
 export function CornerSpray({ className = '' }: SvgProps) {
   return <svg className={`botanical corner-spray ${className}`} viewBox="0 0 260 260" aria-hidden="true" focusable="false">
-    <Sprig x={18} y={246} angle={14} length={212} bend={-30} leaves={9} leafSize={30} tone="sage" altTone="moss" />
-    <Sprig x={22} y={242} angle={72} length={196} bend={28} leaves={8} leafSize={28} tone="moss" altTone="sage" />
+    <Sprig x={18} y={246} angle={14} length={212} bend={-30} leaves={9} leafSize={30} tone="green" altTone="fern" />
+    <Sprig x={22} y={242} angle={72} length={196} bend={28} leaves={8} leafSize={28} tone="fern" altTone="green" />
     <Wheat x={20} y={244} angle={30} length={190} bend={-18} />
     <Wheat x={20} y={244} angle={56} length={176} bend={16} />
-    <Sprig x={20} y={244} angle={43} length={168} bend={8} leaves={7} leafSize={22} tone="rust" altTone="mustard" />
-    <Sprig x={24} y={240} angle={86} length={132} bend={-14} leaves={7} leafSize={19} tone="burgundy" altTone="terracotta" berries />
-    <Sprig x={16} y={238} angle={0} length={124} bend={12} leaves={7} leafSize={19} tone="burgundy" altTone="terracotta" berries />
-    <Flower x={112} y={214} r={21} variant="cosmos" outer="blush" inner="rust" center="burgundy" rotate={18} />
-    <Flower x={40} y={152} r={19} variant="cosmos" outer="burgundy" inner="terracotta" center="mustard" />
+    <Sprig x={20} y={244} angle={43} length={168} bend={8} leaves={7} leafSize={22} tone="apricot" altTone="sunflower" />
+    <Sprig x={24} y={240} angle={86} length={132} bend={-14} leaves={7} leafSize={19} tone="velvet" altTone="peach" berries />
+    <Sprig x={16} y={238} angle={0} length={124} bend={12} leaves={7} leafSize={19} tone="velvet" altTone="peach" berries />
+    <Flower x={112} y={214} r={21} variant="cosmos" outer="pink" inner="apricot" center="velvet" rotate={18} />
+    <Flower x={40} y={152} r={19} variant="cosmos" outer="velvet" inner="peach" center="sunflower" />
     <Flower x={62} y={200} r={36} variant="dahlia" rotate={10} />
-    <Flower x={104} y={166} r={12} variant="bud" outer="mustard" center="burgundy" />
+    <Flower x={104} y={166} r={12} variant="bud" outer="sunflower" center="velvet" />
   </svg>;
 }
 
@@ -182,7 +182,7 @@ export function CornerSpray({ className = '' }: SvgProps) {
 export function LeafSprig({ className = '', flip = false }: SvgProps & { flip?: boolean }) {
   return <svg className={`botanical leaf-sprig ${className}`} viewBox="0 0 56 24" aria-hidden="true" focusable="false">
     <g transform={flip ? 'translate(56 0) scale(-1 1)' : undefined}>
-      <Sprig x={54} y={14} angle={-90} length={50} bend={-7} leaves={6} leafSize={14} tone="sage" altTone="mustard" />
+      <Sprig x={54} y={14} angle={-90} length={50} bend={-7} leaves={6} leafSize={14} tone="green" altTone="sunflower" />
     </g>
   </svg>;
 }

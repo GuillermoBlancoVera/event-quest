@@ -5,29 +5,29 @@
   user-select: none;
 }
 
-.bot-fill-terracotta { fill: var(--color-terracotta); }
-.bot-fill-rust { fill: var(--color-rust); }
-.bot-fill-mustard { fill: var(--color-mustard); }
-.bot-fill-honey { fill: var(--color-honey); }
-.bot-fill-burgundy { fill: var(--color-burgundy); }
-.bot-fill-sage { fill: var(--color-sage); }
-.bot-fill-moss { fill: var(--color-moss); }
-.bot-fill-blush { fill: var(--color-blush); }
+.bot-fill-peach { fill: var(--color-peach); }
+.bot-fill-apricot { fill: var(--color-apricot); }
+.bot-fill-sunflower { fill: var(--color-sunflower); }
+.bot-fill-butter { fill: var(--color-butter); }
+.bot-fill-velvet { fill: var(--color-velvet); }
+.bot-fill-green { fill: var(--color-green); }
+.bot-fill-fern { fill: var(--color-fern); }
+.bot-fill-pink { fill: var(--color-pink); }
 .bot-fill-cream { fill: var(--color-cream); }
 
 .bot-petal {
-  stroke: color-mix(in srgb, var(--color-wine) 22%, transparent);
+  stroke: color-mix(in srgb, var(--color-midnight) 22%, transparent);
   stroke-width: .5;
 }
 
 .bot-stem {
   fill: none;
-  stroke: var(--color-moss);
+  stroke: var(--color-fern);
   stroke-width: 1.3;
   stroke-linecap: round;
 }
 
-.bot-stem-wheat { stroke: var(--color-mustard); }
+.bot-stem-wheat { stroke: var(--color-sunflower); }
 
 .bot-vein {
   fill: none;
@@ -38,7 +38,7 @@
 
 .bot-rule {
   fill: none;
-  stroke: var(--color-mustard);
+  stroke: var(--color-sunflower);
   stroke-width: 1;
   stroke-linecap: round;
 }

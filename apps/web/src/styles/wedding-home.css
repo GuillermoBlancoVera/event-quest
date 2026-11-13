@@ -56,10 +56,10 @@ main > section .eyebrow {
   overflow-x: clip;
   padding: clamp(6.5rem, 16vw, 8rem) 1.25rem clamp(3rem, 8vw, 5rem);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-wine) 62%, transparent), color-mix(in srgb, var(--color-forest) 38%, transparent) 55%, color-mix(in srgb, var(--color-wine) 70%, transparent)),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-midnight) 62%, transparent), color-mix(in srgb, var(--color-pine) 38%, transparent) 55%, color-mix(in srgb, var(--color-midnight) 70%, transparent)),
     url('https://images.unsplash.com/photo-1507504031003-b417219a0fde?auto=format&fit=crop&w=1800&q=90') center / cover,
     var(--leaf-pattern),
-    linear-gradient(160deg, var(--color-forest), var(--color-moss));
+    linear-gradient(160deg, var(--color-pine), var(--color-fern));
 }
 
 .hero-card {
@@ -69,16 +69,16 @@ main > section .eyebrow {
   border-radius: 240px 240px 26px 26px;
   background-color: var(--color-cream);
   background-image: var(--paper-grain);
-  color: var(--color-espresso);
+  color: var(--color-slate);
   text-align: center;
-  box-shadow: 0 30px 80px color-mix(in srgb, var(--color-wine) 55%, transparent);
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--color-midnight) 55%, transparent);
   animation: rise .9s cubic-bezier(.2, .7, .2, 1) both;
 }
 
 .hero-card::before {
   position: absolute;
   inset: 10px;
-  border: 1px solid var(--color-mustard);
+  border: 1px solid var(--color-sunflower);
   border-radius: inherit;
   content: '';
   pointer-events: none;
@@ -91,16 +91,16 @@ main > section .eyebrow {
   width: min(118%, 520px);
   height: auto;
   transform: translate(-50%, -46%);
-  filter: drop-shadow(0 10px 14px color-mix(in srgb, var(--color-wine) 30%, transparent));
+  filter: drop-shadow(0 10px 14px color-mix(in srgb, var(--color-midnight) 30%, transparent));
 }
 
 .hero-card .eyebrow {
-  color: var(--color-terracotta);
+  color: var(--color-peach-deep);
 }
 
 .names {
   margin: 1.1rem 0 1.3rem;
-  color: var(--color-burgundy);
+  color: var(--color-velvet-deep);
   font-family: var(--font-display);
   font-size: clamp(3.9rem, 19vw, 6rem);
   font-style: italic;
@@ -112,7 +112,7 @@ main > section .eyebrow {
 .names span {
   display: block;
   margin: .12em 0 .04em;
-  color: var(--color-mustard);
+  color: var(--color-sunflower);
   font-size: .5em;
   font-weight: 400;
   line-height: 1;
@@ -122,9 +122,9 @@ main > section .eyebrow {
   display: inline-block;
   margin: 0 0 1.8rem;
   padding: .7rem .4rem;
-  border-top: 1px solid var(--color-mustard);
-  border-bottom: 1px solid var(--color-mustard);
-  color: var(--color-espresso);
+  border-top: 1px solid var(--color-sunflower);
+  border-bottom: 1px solid var(--color-sunflower);
+  color: var(--color-slate);
   font-size: .78rem;
   font-weight: 700;
   letter-spacing: .3em;
@@ -134,12 +134,12 @@ main > section .eyebrow {
   display: block;
   width: fit-content;
   margin: 0 auto;
-  background: var(--color-burgundy);
+  background: var(--color-velvet-deep);
   color: var(--color-cream);
 }
 
 .hero-card .button:hover {
-  background: var(--color-terracotta);
+  background: var(--color-peach-deep);
 }
 
 /* Bienvenida */
@@ -192,7 +192,7 @@ main > section .eyebrow {
 .countdown div::before {
   position: absolute;
   inset: 6px;
-  border: 1px solid color-mix(in srgb, var(--color-mustard) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-sunflower) 55%, transparent);
   border-radius: inherit;
   content: '';
 }
@@ -227,7 +227,7 @@ main > section .eyebrow {
   top: .8rem;
   bottom: 2.6rem;
   left: calc(5.5rem + 1.25rem);
-  border-left: 1px dashed var(--color-mustard);
+  border-left: 1px dashed var(--color-sunflower);
   content: '';
 }
 
@@ -247,8 +247,8 @@ main > section .eyebrow {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--color-mustard);
-  box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--color-mustard);
+  background: var(--color-sunflower);
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--color-sunflower);
   content: '';
   transform: translateX(-50%);
 }
@@ -314,7 +314,7 @@ main > section .eyebrow {
   position: absolute;
   object-fit: cover;
   border: 6px solid var(--surface);
-  background: var(--color-sage);
+  background: var(--color-green);
   box-shadow: 0 18px 36px var(--shadow);
 }
 
@@ -332,7 +332,7 @@ main > section .eyebrow {
   width: 46%;
   height: 50%;
   border-radius: var(--radius);
-  background: var(--color-rust);
+  background: var(--color-apricot);
 }
 
 .image-2 {
@@ -341,7 +341,7 @@ main > section .eyebrow {
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: var(--color-mustard);
+  background: var(--color-sunflower);
 }
 
 /* Detalles */
@@ -379,12 +379,12 @@ main > section .eyebrow {
 }
 
 .detail-cards article:nth-child(2) > span {
-  background: color-mix(in srgb, var(--color-honey) 45%, var(--surface));
+  background: color-mix(in srgb, var(--color-butter) 45%, var(--surface));
   color: var(--clay);
 }
 
 .detail-cards article:nth-child(3) > span {
-  background: color-mix(in srgb, var(--color-blush) 60%, var(--surface));
+  background: color-mix(in srgb, var(--color-pink) 60%, var(--surface));
   color: var(--heading);
 }
 
@@ -405,7 +405,7 @@ main > section .eyebrow {
 .gallery-invitation {
   border-top: 1px solid var(--line);
   background:
-    radial-gradient(60% 90% at 50% 0%, color-mix(in srgb, var(--color-honey) 38%, transparent), transparent 70%),
+    radial-gradient(60% 90% at 50% 0%, color-mix(in srgb, var(--color-butter) 38%, transparent), transparent 70%),
     var(--surface-soft);
 }
 
@@ -426,7 +426,7 @@ main > section .eyebrow {
 }
 
 .game-invitation .eyebrow {
-  color: var(--color-honey);
+  color: var(--color-butter);
 }
 
 .game-invitation p:not(.eyebrow) {
@@ -434,12 +434,12 @@ main > section .eyebrow {
 }
 
 .game-invitation .button {
-  background: var(--color-mustard);
-  color: var(--color-espresso);
+  background: var(--color-sunflower);
+  color: var(--color-slate);
 }
 
 .game-invitation .button:hover {
-  background: var(--color-honey);
+  background: var(--color-butter);
 }
 
 .game-invitation-spray {

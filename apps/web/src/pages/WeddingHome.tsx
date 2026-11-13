@@ -21,7 +21,7 @@ export function WeddingHome() {
         <Bouquet className="hero-bouquet" />
         <p className="eyebrow">Nos casamos</p>
         <p className="names">Sara <span>&amp;</span> Guille</p>
-        <p className="date">20 · SEPTIEMBRE · 2026</p>
+        <p className="date">24 · SEPTIEMBRE · 2026</p>
         <a className="button" href="#cuenta-atras" onClick={scrollToSection('cuenta-atras')}>Guardar la fecha</a>
       </div>
     </section>
@@ -41,7 +41,7 @@ export function WeddingHome() {
       <div className="section-inner">
         <p className="eyebrow">La cuenta atrás</p>
         <h2>Falta muy poquito</h2>
-        <Countdown target="2026-09-20T17:00:00+02:00" />
+        <Countdown target="2026-09-24T17:00:00+02:00" />
       </div>
     </section>
 
