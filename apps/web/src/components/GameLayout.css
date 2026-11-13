@@ -1,284 +1,391 @@
+/* Aplicación del juego: fondo burdeos con hojas y tarjetas de papel crema */
+
 .game-app {
-    min-height: 100vh;
-    background: var(--game-background);
-    color: var(--game-foreground)
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--leaf-pattern), var(--game-background);
+  color: var(--game-foreground);
 }
 
 .game-header {
-    max-width: 1120px;
-    margin: auto;
-    padding: 1.4rem 1.5rem;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.3rem 1.25rem .9rem;
 }
 
 .game-brand {
-    grid-column: 2;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    color: var(--game-foreground);
-    text-decoration: none;
-    font-weight: 900;
-    letter-spacing: .04em
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  color: var(--game-foreground);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.game-brand span {
-    font-size: 1.1rem
-}
-
-.game-header nav {
-    grid-column: 3;
-    justify-self: end;
-    display: flex;
-    gap: 1rem
-}
-
-.game-header nav a,
-.game-header nav button {
-    color: var(--game-foreground-muted);
-    background: transparent;
-    border: 0;
-    text-decoration: none;
-    font: inherit;
-    font-size: .85rem
+.game-brand .leaf-sprig {
+  width: 2.3rem;
+  opacity: .95;
 }
 
 .game-main {
-    max-width: 1000px;
-    margin: auto;
-    padding: 2.5rem 1.5rem 5rem
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 5rem;
 }
 
 .game-main .page {
-    padding-top: 0
+  min-height: 0;
+  padding: 0;
+}
+
+.game-app .page h1,
+.game-app .page h2 {
+  color: var(--game-foreground);
+}
+
+.game-app .page h1 {
+  font-size: clamp(2.3rem, 9vw, 3.4rem);
+}
+
+.game-app .lead {
+  color: color-mix(in srgb, var(--game-foreground) 88%, transparent);
+}
+
+.game-app .text-link {
+  color: var(--color-honey);
 }
 
 .game-app .notice {
-    color: var(--ink-strong);
-    background: var(--surface-soft);
-    border-left-color: var(--accent)
+  border-left-color: var(--accent);
+  background: var(--surface-soft);
+  color: var(--ink-strong);
 }
 
+.game-app .button {
+  background: var(--color-mustard);
+  color: var(--color-espresso);
+}
+
+.game-app .button:hover {
+  background: var(--color-honey);
+}
+
+/* Tarjeta principal */
+
 .game-panel {
-    background: var(--surface);
-    color: var(--ink-strong);
-    border-radius: 20px;
-    padding: clamp(1.5rem, 4vw, 3rem);
-    box-shadow: 0 24px 70px var(--shadow)
+  position: relative;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+  background-image: var(--paper-grain);
+  color: var(--ink-strong);
+  box-shadow: 0 24px 70px color-mix(in srgb, #000 35%, transparent);
+}
+
+.game-panel::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-mustard) 60%, transparent);
+  border-radius: calc(var(--radius-lg) - 6px);
+  content: '';
+  pointer-events: none;
 }
 
 .game-panel h1 {
-    margin: .2rem 0 1rem;
-    font-size: clamp(2.2rem, 6vw, 4.5rem)
+  margin: .3rem 0 1rem;
+  font-size: clamp(2.3rem, 8vw, 3.6rem);
+  font-style: italic;
 }
 
 .game-kicker {
-    color: var(--ink-muted);
-    font-weight: 800;
-    letter-spacing: .12em;
-    font-size: .72rem
+  color: var(--ink-muted);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .2em;
+}
+
+.game-panel.profile-summary::before {
+  content: none;
+}
+
+/* Acceso al juego */
+
+.game-access {
+  display: grid;
+  align-items: center;
+}
+
+.game-access .game-main {
+  width: 100%;
+  max-width: 520px;
+  padding-top: 5.5rem;
+}
+
+.game-access .game-panel {
+  padding-top: clamp(4.2rem, 16vw, 5.2rem);
+  text-align: center;
+}
+
+.game-panel-bouquet {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(92%, 400px);
+  height: auto;
+  transform: translate(-50%, -52%);
+  filter: drop-shadow(0 8px 12px color-mix(in srgb, #000 28%, transparent));
 }
 
 .auth-tabs {
-    display: flex;
-    gap: .5rem;
-    margin: 1.5rem 0
+  display: flex;
+  gap: .5rem;
+  margin: 1.5rem 0;
 }
 
 .auth-tabs button {
-    border: 1px solid var(--line);
-    border-radius: 99px;
-    padding: .55rem 1rem;
-    background: var(--surface);
-    color: var(--ink)
+  padding: .55rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .auth-tabs .active {
-    background: var(--color-velvet-blue);
-    color: var(--on-accent)
+  background: var(--color-burgundy);
+  color: var(--on-accent);
 }
 
 .auth-form {
-    display: grid;
-    gap: 1rem;
-    max-width: 440px
+  display: grid;
+  gap: 1rem;
+  max-width: 440px;
+  margin: 1.5rem auto 0;
+  text-align: left;
 }
 
 .auth-form label {
-    display: grid;
-    gap: .35rem;
-    font-weight: 700
+  display: grid;
+  gap: .4rem;
+  color: var(--ink-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .12em;
 }
 
 .auth-form input {
-    padding: .8rem;
-    border: 1px solid var(--line);
-    border-radius: 9px;
-    font: inherit
+  width: 100%;
+  padding: .85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink-strong);
+  font: inherit;
+  font-size: 1rem;
+  letter-spacing: 0;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.auth-form input:focus {
+  border-color: var(--clay);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clay) 22%, transparent);
 }
 
 .game-button {
-    border: 0;
-    border-radius: 9px;
-    background: var(--accent);
-    color: var(--ink-strong);
-    padding: .9rem 1.2rem;
-    font-weight: 800;
-    font: inherit;
-    cursor: pointer
+  margin-top: .4rem;
+  padding: .95rem 1.4rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--button);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: background-color .25s ease, transform .25s ease;
 }
 
+.game-button:hover {
+  background: var(--button-hover);
+  transform: translateY(-2px);
+}
+
+.game-button:disabled {
+  opacity: .55;
+  cursor: wait;
+  transform: none;
+}
+
+.game-access .notice {
+  margin: 1.25rem auto 0;
+  text-align: left;
+}
+
+/* Perfil */
+
 .profile-hero {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: center;
-    text-align: center
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
 }
 
 .avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, var(--color-sun), var(--accent));
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: var(--ink-strong);
-    overflow: hidden
+  display: grid;
+  width: 120px;
+  height: 120px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-honey), var(--color-rust));
+  color: var(--color-wine);
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 600;
 }
 
 .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-id {
-    display: flex;
-    flex-direction: row;
-    gap: 1.25rem;
-    align-items: center;
-    text-align: left
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: left;
 }
 
 .profile-id h1 {
-    margin: 0;
-    font-size: clamp(1.7rem, 7vw, 2.4rem)
+  margin: 0;
+  font-size: clamp(1.7rem, 7vw, 2.4rem);
 }
 
 .profile-id p {
-    margin: 0
+  margin: 0;
 }
 
-.profile-hero>div:last-child .game-kicker {
-    margin: 0
+.profile-hero > div:last-child .game-kicker {
+  margin: 0;
 }
 
-.profile-hero>div:last-child .score {
-    line-height: 1
+.profile-hero > div:last-child .score {
+  line-height: 1;
 }
 
 .score {
-    font-size: 2.6rem;
-    font-weight: 900;
-    color: var(--accent-strong)
+  color: var(--accent-strong);
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
 }
 
 .profile-tabs {
-    margin: 2rem 0 1rem
+  margin: 2rem 0 1rem;
 }
 
 .profile-card {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 1.25rem
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .challenge-history {
-    list-style: none;
-    padding: 0;
-    margin: 0
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .challenge-history li {
-    display: flex;
-    justify-content: space-between;
-    padding: .8rem 0;
-    border-bottom: 1px solid var(--line)
+  display: flex;
+  justify-content: space-between;
+  padding: .8rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .challenge-points.positive {
-    color: var(--success)
+  color: var(--success);
 }
 
 .challenge-points.zero {
-    color: var(--ink-muted)
+  color: var(--ink-muted);
 }
 
 .challenge-points.negative {
-    color: var(--danger)
+  color: var(--danger);
 }
 
 .ranking-avatar {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    background: linear-gradient(135deg, var(--color-sun), var(--accent));
-    color: var(--ink-strong);
-    font-weight: 900
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-honey), var(--color-rust));
+  color: var(--color-wine);
+  font-weight: 700;
 }
 
 .ranking-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-card .ranking {
-    margin: 0;
-    max-width: none
+  max-width: none;
+  margin: 0;
 }
 
 .profile-card .ranking li {
-    background: transparent
+  background: transparent;
 }
 
 .profile-card a {
-    color: var(--link);
-    font-weight: 700
+  color: var(--link);
+  font-weight: 700;
 }
 
-@media(max-width:680px) {
-    .game-header nav {
-        display: none
-    }
+@media (max-width: 680px) {
+  .game-main {
+    padding-top: .75rem;
+  }
 
-    .game-main {
-        padding-top: .75rem
-    }
+  .game-access .game-main {
+    padding-top: 5rem;
+  }
 
-    .profile-hero {
-        align-items: center
-    }
+  .game-brand {
+    font-size: 1.25rem;
+  }
 
-    .profile-tabs {
-        margin-top: 1.5rem
-    }
+  .game-brand .leaf-sprig {
+    width: 1.8rem;
+  }
 
-    .profile-tabs button {
-        flex: 1;
-        padding: .55rem .4rem
-    }
+  .profile-tabs {
+    margin-top: 1.5rem;
+  }
 
-    .profile-grid {
-        grid-template-columns: 1fr
-    }
+  .profile-tabs button {
+    flex: 1;
+    padding: .55rem .4rem;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
 }

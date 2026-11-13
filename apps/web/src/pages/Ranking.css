@@ -23,6 +23,8 @@
 
 .ranking-affiliation-icon {
   display: grid;
+  color: var(--clay);
+  background: color-mix(in srgb, var(--clay) 14%, transparent);
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
@@ -79,10 +81,12 @@
   place-self: center;
   text-align: center;
   line-height: 1;
-  font-family: inherit;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--sage);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+  color: var(--clay);
 }
 
 .affiliation-ranking li {
@@ -105,7 +109,7 @@
 
 .ranking-affiliation-card > strong {
   width: 3ch;
-  color: var(--sage);
+  color: var(--accent-strong);
   text-align: right;
 }
 
@@ -115,10 +119,12 @@
   place-self: center;
   text-align: center;
   line-height: 1;
-  font-family: inherit;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--sage);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+  color: var(--clay);
 }
 
 .ranking-affiliation-card > span {
