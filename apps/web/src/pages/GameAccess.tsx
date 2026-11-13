@@ -1,6 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { Bouquet } from '../components/Botanicals';
+import '../components/GameLayout.css';
 
 export function GameAccess() {
   const existing = localStorage.getItem('event-quest-user');
@@ -30,5 +32,5 @@ export function GameAccess() {
     }
   };
 
-  return <main className="game-app"><section className="game-main"><div className="game-panel"><p className="game-kicker">LA BODA DE SARA &amp; GUILLE</p><h1>Tu aventura empieza aquí.</h1><p>Inicia sesión para guardar tus puntos y volver a tu perfil cuando quieras.</p><form className="auth-form" onSubmit={submit}><label>Nombre<input required value={name} onChange={event => setName(event.target.value)} /></label><label>Contraseña<input required type="password" value={password} onChange={event => setPassword(event.target.value)} /></label><button className="game-button" disabled={busy}>{busy ? 'Comprobando…' : 'Entrar a mi perfil'}</button></form>{message && <p className="notice">{message}</p>}</div></section></main>;
+  return <main className="game-app game-access"><section className="game-main"><div className="game-panel"><Bouquet className="game-panel-bouquet" /><p className="game-kicker">LA BODA DE SARA &amp; GUILLE</p><h1>Tu aventura empieza aquí.</h1><p>Inicia sesión para guardar tus puntos y volver a tu perfil cuando quieras.</p><form className="auth-form" onSubmit={submit}><label>Nombre<input required value={name} onChange={event => setName(event.target.value)} /></label><label>Contraseña<input required type="password" value={password} onChange={event => setPassword(event.target.value)} /></label><button className="game-button" disabled={busy}>{busy ? 'Comprobando…' : 'Entrar a mi perfil'}</button></form>{message && <p className="notice">{message}</p>}</div></section></main>;
 }

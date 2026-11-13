@@ -33,7 +33,7 @@
   position: relative;
   width: min(100%, 360px);
   padding: 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   text-align: center;
   box-shadow: 0 18px 50px var(--shadow);
 }
@@ -50,8 +50,11 @@
 
 .challenge-result-content p {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .challenge-result-content strong {

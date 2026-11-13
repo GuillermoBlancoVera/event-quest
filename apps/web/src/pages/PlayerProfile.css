@@ -28,7 +28,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--color-sun);
+  background: linear-gradient(90deg, var(--color-mustard), var(--color-honey));
 }
 
 .profile-content {
@@ -83,7 +83,7 @@
   justify-items: center;
   gap: 1rem;
   padding: 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--ink-strong);
   box-shadow: 0 18px 50px var(--shadow);
@@ -136,7 +136,7 @@
 .profile-ranking .profile-ranking-item {
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 4px 12px var(--shadow);
 }
@@ -205,7 +205,7 @@
   position: relative;
   width: min(100%, 360px);
   padding: 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--ink-strong);
   text-align: center;
@@ -303,6 +303,7 @@
 }
 
 .profile-name {
+  font-size: clamp(2.4rem, 10vw, 3.4rem);
   max-width: 100%;
   margin: 1rem 0 1.25rem;
   overflow: hidden;
@@ -354,7 +355,7 @@
 }
 
 .profile-logout:hover {
-  color: var(--color-sun);
+  color: var(--color-honey);
 }
 
 .profile-hero .profile-summary-details .game-kicker {
@@ -367,9 +368,12 @@
   display: grid;
   height: 46px;
   place-items: center;
-  color: var(--sage);
-  font-size: 2rem;
-  font-weight: 800;
+  color: var(--clay);
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-style: italic;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
   line-height: 1;
 }
 

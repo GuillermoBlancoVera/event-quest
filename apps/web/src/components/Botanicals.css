@@ -1,0 +1,72 @@
+.botanical {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bot-fill-terracotta { fill: var(--color-terracotta); }
+.bot-fill-rust { fill: var(--color-rust); }
+.bot-fill-mustard { fill: var(--color-mustard); }
+.bot-fill-honey { fill: var(--color-honey); }
+.bot-fill-burgundy { fill: var(--color-burgundy); }
+.bot-fill-sage { fill: var(--color-sage); }
+.bot-fill-moss { fill: var(--color-moss); }
+.bot-fill-blush { fill: var(--color-blush); }
+.bot-fill-cream { fill: var(--color-cream); }
+
+.bot-petal {
+  stroke: color-mix(in srgb, var(--color-wine) 22%, transparent);
+  stroke-width: .5;
+}
+
+.bot-stem {
+  fill: none;
+  stroke: var(--color-moss);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.bot-stem-wheat { stroke: var(--color-mustard); }
+
+.bot-vein {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-cream) 55%, transparent);
+  stroke-width: .7;
+  stroke-linecap: round;
+}
+
+.bot-rule {
+  fill: none;
+  stroke: var(--color-mustard);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.floral-divider {
+  width: min(280px, 72%);
+  height: auto;
+  margin: 2rem auto 0;
+}
+
+.leaf-sprig {
+  width: 2.6rem;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.bloom-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+}
+
+.detail-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

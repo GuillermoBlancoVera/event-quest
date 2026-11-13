@@ -11,11 +11,15 @@
 }
 
 .por-la-cara-detail > strong {
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-style: italic;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
 }
 
 .por-la-cara-detail > strong.positive {
-  color: var(--color-sun);
+  color: var(--color-honey);
 }
 
 .por-la-cara-detail > strong.negative {

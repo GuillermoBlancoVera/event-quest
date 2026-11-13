@@ -1,6 +1,6 @@
 .community-challenge-progress {
   margin: 1.25rem 0 2rem;
-  color: var(--color-sun);
+  color: var(--color-honey);
   font-weight: 800;
 }
 
@@ -20,7 +20,7 @@
   margin: .65rem 0;
   padding: .65rem;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink-strong);
 }
@@ -51,7 +51,18 @@
 }
 
 .community-scan-missing article {
-  opacity: .48;
+  border: 1px dashed color-mix(in srgb, var(--color-cream) 38%, transparent);
+  background: color-mix(in srgb, var(--color-cream) 6%, transparent);
+  color: var(--game-foreground);
+}
+
+.community-scan-missing article small {
+  color: var(--game-foreground-muted);
+}
+
+.community-scan-missing .community-scan-placeholder {
+  background: color-mix(in srgb, var(--color-cream) 12%, transparent);
+  color: var(--color-honey);
 }
 
 .community-scan-result {
@@ -68,7 +79,7 @@
 }
 
 .community-scan-result strong {
-  color: var(--color-sun);
+  color: var(--color-honey);
   font-size: 1.5rem;
 }
 

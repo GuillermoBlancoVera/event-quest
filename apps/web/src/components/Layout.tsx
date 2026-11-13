@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { BloomMark, FloralDivider } from './Botanicals';
 
 const links = [['el-dia', 'El gran día'], ['finca', 'La finca'], ['detalles', 'Detalles']];
 
@@ -20,16 +21,23 @@ export function Layout() {
 
   return <>
     <header className="site-header">
-      <Link className="brand" to="/">La Boda de <i>Sara &amp; Guille</i></Link>
-      <button className="menu" aria-expanded={open} aria-label="Abrir navegación" onClick={() => setOpen(!open)}>☰</button>
-      <nav className={open ? 'open' : ''}>
-        {links.map(([id, label]) => <a key={id} href={`#${id}`} onClick={(event) => { event.preventDefault(); setOpen(false); goToSection(id); }}>{label}</a>)}
-        <Link className="game-link" to="/galeria" onClick={() => setOpen(false)}>Galería</Link>
-        <Link className="game-link" to="/juego" onClick={() => setOpen(false)}>Jugar</Link>
-        <button className="theme" onClick={() => setDark(!dark)} aria-label="Cambiar tema de color">{dark ? '☼' : '◐'}</button>
-      </nav>
+      <div className="site-header-inner">
+        <Link className="brand" to="/" onClick={() => setOpen(false)}><BloomMark /><span>La Boda de <i>Sara &amp; Guille</i></span></Link>
+        <button className={open ? 'menu open' : 'menu'} aria-expanded={open} aria-label="Abrir navegación" onClick={() => setOpen(!open)}><span aria-hidden="true" /></button>
+        <nav className={open ? 'open' : ''}>
+          {links.map(([id, label]) => <a key={id} href={`#${id}`} onClick={(event) => { event.preventDefault(); setOpen(false); goToSection(id); }}>{label}</a>)}
+          <Link className="game-link game-link-soft" to="/galeria" onClick={() => setOpen(false)}>Galería</Link>
+          <Link className="game-link" to="/juego" onClick={() => setOpen(false)}>Jugar</Link>
+          <button className="theme" onClick={() => setDark(!dark)} aria-label="Cambiar tema de color">{dark ? '☼' : '◐'}</button>
+        </nav>
+      </div>
     </header>
     <main><Outlet /></main>
-    <footer><span>Hecho con cariño para un día inolvidable.</span><a href="#detalles" onClick={(event) => { event.preventDefault(); goToSection('detalles'); }}>¿Necesitas ayuda?</a></footer>
+    <footer className="site-footer">
+      <FloralDivider />
+      <p className="footer-names">Sara &amp; Guille</p>
+      <span>Hecho con cariño para un día inolvidable.</span>
+      <a href="#detalles" onClick={(event) => { event.preventDefault(); goToSection('detalles'); }}>¿Necesitas ayuda?</a>
+    </footer>
   </>;
 }
