@@ -1,18 +1,22 @@
 :root {
-  /* Paleta de otoño: terracota, mostaza, burdeos y salvia sobre papel crema */
-  --color-cream: #fbf5ea;
-  --color-linen: #f3e9d8;
-  --color-terracotta: #b4532f;
-  --color-rust: #d07f58;
-  --color-mustard: #d4a03a;
-  --color-honey: #edcb80;
-  --color-burgundy: #6e1e2c;
-  --color-wine: #3b0f18;
-  --color-sage: #93a17e;
-  --color-moss: #5a6843;
-  --color-forest: #2c3526;
-  --color-blush: #ecc7b2;
-  --color-espresso: #33231c;
+  /* Paleta de la boda: sunflower, perfect peach, softest pink, velvet blue y green forests */
+  --color-sunflower: #e0b451;
+  --color-peach: #ee9452;
+  --color-pink: #d39ba0;
+  --color-velvet: #777e88;
+  --color-green: #a0aa74;
+
+  /* Matices derivados de la paleta para texto, fondos y sombras */
+  --color-cream: #fcf7ee;
+  --color-linen: #f5eddc;
+  --color-butter: #f2d792;
+  --color-apricot: #f6b98a;
+  --color-peach-deep: #b65a1c;
+  --color-velvet-deep: #4e545f;
+  --color-midnight: #2c3038;
+  --color-fern: #6d7746;
+  --color-pine: #4c5431;
+  --color-slate: #343842;
 
   /* Tipografía */
   --font-display: 'Cormorant Garamond', 'Cormorant', 'Iowan Old Style', Georgia, serif;
@@ -26,62 +30,63 @@
 
   /* Tokens semánticos compartidos */
   --paper: var(--color-cream);
-  --ink: var(--color-espresso);
-  --ink-strong: var(--color-espresso);
-  --ink-muted: color-mix(in srgb, var(--color-espresso) 68%, var(--color-cream));
-  --heading: var(--color-burgundy);
-  --sage: var(--color-moss);
-  --clay: var(--color-terracotta);
-  --line: color-mix(in srgb, var(--color-mustard) 30%, var(--color-linen));
+  --ink: var(--color-slate);
+  --ink-strong: var(--color-slate);
+  --ink-muted: color-mix(in srgb, var(--color-slate) 68%, var(--color-cream));
+  --heading: var(--color-velvet-deep);
+  --sage: var(--color-fern);
+  --clay: var(--color-peach-deep);
+  --line: color-mix(in srgb, var(--color-sunflower) 30%, var(--color-linen));
   --surface: #fffaf2;
   --surface-soft: var(--color-linen);
-  --surface-muted: color-mix(in srgb, var(--color-sage) 24%, var(--color-cream));
-  --overlay: color-mix(in srgb, var(--color-wine) 68%, transparent);
-  --shadow: color-mix(in srgb, var(--color-espresso) 13%, transparent);
+  --surface-muted: color-mix(in srgb, var(--color-green) 24%, var(--color-cream));
+  --overlay: color-mix(in srgb, var(--color-midnight) 68%, transparent);
+  --shadow: color-mix(in srgb, var(--color-slate) 13%, transparent);
   --on-accent: var(--color-cream);
-  --accent: var(--color-mustard);
-  --accent-strong: var(--color-burgundy);
-  --button: var(--color-burgundy);
-  --button-hover: var(--color-terracotta);
-  --link: var(--color-terracotta);
-  --success: var(--color-moss);
-  --success-surface: color-mix(in srgb, var(--color-sage) 34%, var(--color-cream));
-  --danger: #8f2a25;
-  --danger-surface: color-mix(in srgb, var(--color-blush) 62%, var(--color-cream));
+  --accent: var(--color-sunflower);
+  --accent-strong: var(--color-velvet-deep);
+  --button: var(--color-velvet-deep);
+  --button-hover: var(--color-peach-deep);
+  --link: var(--color-peach-deep);
+  --success: var(--color-fern);
+  --success-surface: color-mix(in srgb, var(--color-green) 34%, var(--color-cream));
+  --danger: #a0444d;
+  --danger-surface: color-mix(in srgb, var(--color-pink) 62%, var(--color-cream));
   --header-surface: color-mix(in srgb, var(--color-cream) 86%, transparent);
 
   /* Superficies específicas de la aplicación del juego */
-  --game-background: radial-gradient(120% 70% at 50% 0%, #84293a 0%, var(--color-burgundy) 38%, var(--color-wine) 100%);
+  --game-background: radial-gradient(120% 70% at 50% 0%, var(--color-velvet) 0%, var(--color-velvet-deep) 38%, var(--color-midnight) 100%);
   --game-foreground: var(--color-cream);
-  --game-foreground-muted: color-mix(in srgb, var(--color-honey) 62%, var(--color-cream));
+  --game-foreground-muted: color-mix(in srgb, var(--color-butter) 62%, var(--color-cream));
 
   /* Grano de papel muy sutil */
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .3 0 0 0 0 .18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .34 0 0 0 0 .24 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
   /* Hojas dispersas para los fondos oscuros */
-  --leaf-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='%23fbf5ea' fill-opacity='.055'%3E%3Cpath transform='translate(34 52) rotate(32)' d='M0 0C7 -5 7 -17 0 -26C-7 -17 -7 -5 0 0Z'/%3E%3Cpath transform='translate(126 34) rotate(-48)' d='M0 0C6 -4 6 -14 0 -22C-6 -14 -6 -4 0 0Z'/%3E%3Cpath transform='translate(96 118) rotate(140)' d='M0 0C7 -5 7 -17 0 -26C-7 -17 -7 -5 0 0Z'/%3E%3Cpath transform='translate(150 150) rotate(12)' d='M0 0C5 -4 5 -12 0 -19C-5 -12 -5 -4 0 0Z'/%3E%3Cpath transform='translate(28 142) rotate(-110)' d='M0 0C5 -4 5 -12 0 -19C-5 -12 -5 -4 0 0Z'/%3E%3Ccircle cx='78' cy='30' r='2.4'/%3E%3Ccircle cx='160' cy='92' r='2'/%3E%3Ccircle cx='56' cy='98' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
+  --leaf-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='%23fcf7ee' fill-opacity='.055'%3E%3Cpath transform='translate(34 52) rotate(32)' d='M0 0C7 -5 7 -17 0 -26C-7 -17 -7 -5 0 0Z'/%3E%3Cpath transform='translate(126 34) rotate(-48)' d='M0 0C6 -4 6 -14 0 -22C-6 -14 -6 -4 0 0Z'/%3E%3Cpath transform='translate(96 118) rotate(140)' d='M0 0C7 -5 7 -17 0 -26C-7 -17 -7 -5 0 0Z'/%3E%3Cpath transform='translate(150 150) rotate(12)' d='M0 0C5 -4 5 -12 0 -19C-5 -12 -5 -4 0 0Z'/%3E%3Cpath transform='translate(28 142) rotate(-110)' d='M0 0C5 -4 5 -12 0 -19C-5 -12 -5 -4 0 0Z'/%3E%3Ccircle cx='78' cy='30' r='2.4'/%3E%3Ccircle cx='160' cy='92' r='2'/%3E%3Ccircle cx='56' cy='98' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 html[data-theme='dark'] {
-  --paper: #1e1512;
-  --ink: #f1e5d1;
-  --ink-strong: #f6ecdb;
-  --ink-muted: #c2af99;
-  --heading: var(--color-honey);
-  --sage: #b4c19d;
-  --clay: #e39670;
-  --line: #4b3a30;
-  --surface: #2a1e19;
-  --surface-soft: #33251f;
-  --surface-muted: #3a2d25;
+  --paper: #23262c;
+  --ink: #f1ebdf;
+  --ink-strong: #f7f2e8;
+  --ink-muted: #b9bcc2;
+  --heading: var(--color-butter);
+  --sage: #c1ca98;
+  --clay: var(--color-peach);
+  --line: #474c56;
+  --surface: #2c3037;
+  --surface-soft: #33373f;
+  --surface-muted: #3a3f48;
   --overlay: color-mix(in srgb, #000 68%, transparent);
   --shadow: color-mix(in srgb, #000 42%, transparent);
-  --accent-strong: #e39670;
-  --button: var(--color-terracotta);
-  --button-hover: #c7653f;
-  --link: #e39670;
-  --success: #b4c19d;
-  --success-surface: #33402b;
-  --danger: #f1a99c;
-  --danger-surface: #4a2320;
-  --header-surface: color-mix(in srgb, #1e1512 86%, transparent);
+  --accent-strong: var(--color-peach);
+  --button: var(--color-peach);
+  --button-hover: var(--color-apricot);
+  --on-accent: var(--color-midnight);
+  --link: var(--color-peach);
+  --success: #c1ca98;
+  --success-surface: #3d4530;
+  --danger: #ecb9bd;
+  --danger-surface: #4d3338;
+  --header-surface: color-mix(in srgb, #23262c 86%, transparent);
 }

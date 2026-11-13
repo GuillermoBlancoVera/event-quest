@@ -1,6 +1,6 @@
 .community-challenge-progress {
   margin: 1.25rem 0 2rem;
-  color: var(--color-honey);
+  color: var(--color-butter);
   font-weight: 800;
 }
 
@@ -62,7 +62,7 @@
 
 .community-scan-missing .community-scan-placeholder {
   background: color-mix(in srgb, var(--color-cream) 12%, transparent);
-  color: var(--color-honey);
+  color: var(--color-butter);
 }
 
 .community-scan-result {
@@ -79,7 +79,7 @@
 }
 
 .community-scan-result strong {
-  color: var(--color-honey);
+  color: var(--color-butter);
   font-size: 1.5rem;
 }
 

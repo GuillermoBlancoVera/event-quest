@@ -59,7 +59,7 @@
 }
 
 .game-app .text-link {
-  color: var(--color-honey);
+  color: var(--color-butter);
 }
 
 .game-app .notice {
@@ -69,12 +69,12 @@
 }
 
 .game-app .button {
-  background: var(--color-mustard);
-  color: var(--color-espresso);
+  background: var(--color-sunflower);
+  color: var(--color-slate);
 }
 
 .game-app .button:hover {
-  background: var(--color-honey);
+  background: var(--color-butter);
 }
 
 /* Tarjeta principal */
@@ -92,7 +92,7 @@
 .game-panel::before {
   position: absolute;
   inset: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-mustard) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-sunflower) 60%, transparent);
   border-radius: calc(var(--radius-lg) - 6px);
   content: '';
   pointer-events: none;
@@ -158,7 +158,7 @@
 }
 
 .auth-tabs .active {
-  background: var(--color-burgundy);
+  background: var(--color-velvet-deep);
   color: var(--on-accent);
 }
 
@@ -245,8 +245,8 @@
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-honey), var(--color-rust));
-  color: var(--color-wine);
+  background: linear-gradient(135deg, var(--color-butter), var(--color-apricot));
+  color: var(--color-midnight);
   font-family: var(--font-display);
   font-size: 2.5rem;
   font-weight: 600;
@@ -334,8 +334,8 @@
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-honey), var(--color-rust));
-  color: var(--color-wine);
+  background: linear-gradient(135deg, var(--color-butter), var(--color-apricot));
+  color: var(--color-midnight);
   font-weight: 700;
 }
 
