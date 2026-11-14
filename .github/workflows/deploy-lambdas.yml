@@ -1,0 +1,26 @@
+name: Deploy Lambdas
+on:
+  push:
+    branches: [develop]
+    paths: ['services/**', 'packages/**', 'scripts/**', 'pnpm-lock.yaml', '.github/workflows/deploy-lambdas.yml']
+  workflow_dispatch: {}
+# id-token lets the job request short-lived AWS credentials (OIDC); no AWS keys are stored in GitHub.
+permissions: { contents: read, id-token: write }
+concurrency: { group: deploy-lambdas, cancel-in-progress: false }
+jobs:
+  deploy:
+    # Skipped until `terraform apply` has created the deploy role and its ARN is saved as a repository variable.
+    if: vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./services/*..." test
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+      - run: scripts/deploy-lambdas.sh
