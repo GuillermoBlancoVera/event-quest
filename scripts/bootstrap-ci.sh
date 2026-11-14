@@ -75,6 +75,15 @@ if ! aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$provi
   aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com \
     --client-id-list sts.amazonaws.com >/dev/null
 fi
+# The identity GitHub presents for this repository. Newer repositories use an "immutable" subject
+# that carries the numeric owner and repository ids (repo:owner@123/name@456); GitHub reports the
+# exact prefix, so ask it rather than guess. Override with OIDC_SUBJECT_PREFIX if `gh` is missing.
+subject_prefix="${OIDC_SUBJECT_PREFIX:-}"
+if [ -z "$subject_prefix" ] && command -v gh >/dev/null 2>&1; then
+  subject_prefix="$(gh api "repos/$repository/actions/oidc/customization/sub" --jq '.sub_claim_prefix // empty' 2>/dev/null || true)"
+fi
+subject_prefix="${subject_prefix:-repo:$repository}"
+echo "    subject: $subject_prefix:ref:refs/heads/$branch"
 trust="$(mktemp)"
 trap 'rm -f "$trust"' EXIT
 cat >"$trust" <<EOF
@@ -86,7 +95,7 @@ cat >"$trust" <<EOF
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
       "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-      "StringLike": { "token.actions.githubusercontent.com:sub": "repo:$repository:ref:refs/heads/$branch" }
+      "StringLike": { "token.actions.githubusercontent.com:sub": "$subject_prefix:ref:refs/heads/$branch" }
     }
   }]
 }
