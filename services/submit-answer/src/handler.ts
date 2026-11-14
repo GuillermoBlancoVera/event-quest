@@ -1,3 +1,39 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'; import { DynamoDBDocumentClient, GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb'; import type { APIGatewayProxyHandlerV2 } from 'aws-lambda'; import { normalizeAnswer, type Challenge, type ChallengeAttempt, type Settings, type SubmitAnswerRequest, type User } from '@event-quest/shared';
-const db=DynamoDBDocumentClient.from(new DynamoDBClient({})); const reply=(statusCode:number,body:unknown)=>({statusCode,headers:{'content-type':'application/json','access-control-allow-origin':'*'},body:JSON.stringify(body)});
-export const handler: APIGatewayProxyHandlerV2=async e=>{ const input=JSON.parse(e.body??'{}') as SubmitAnswerRequest, id=Number(input.challengeId); if(!id||!input.userId||!input.answer) return reply(400,{code:'VALIDATION_ERROR',message:'El reto, el jugador y la respuesta son obligatorios.'}); const [challengeResult,userResult,settingsResult]=await Promise.all([db.send(new GetCommand({TableName:process.env.CHALLENGES_TABLE,Key:{PK:`CHALLENGE#${id}`,SK:'DETAIL'}})),db.send(new GetCommand({TableName:process.env.USERS_TABLE,Key:{PK:`USER#${input.userId}`,SK:'PROFILE'}})),db.send(new GetCommand({TableName:process.env.SETTINGS_TABLE,Key:{PK:'SETTINGS',SK:'GAME'}}))]); const challenge=challengeResult.Item as Challenge|undefined, user=userResult.Item as User|undefined, settings=settingsResult.Item as Settings|undefined; if(!challenge||!challenge.enabled||!user) return reply(404,{code:'NOT_FOUND',message:'No se ha encontrado el jugador o el reto activo.'}); if(settings?.maintenanceMode||settings?.gameEnabled===false) return reply(503,{code:'GAME_UNAVAILABLE',message:'El juego no está disponible ahora mismo.'}); const attempts=user.challengeAttempts??[]; if(attempts.some(attempt=>attempt.challengeId===id)) return reply(409,{code:'ALREADY_PLAYED',message:'Ya has jugado a este reto.'}); const correct=normalizeAnswer(input.answer)===normalizeAnswer(challenge.correctAnswer), now=new Date().toISOString(), awardedPoints=correct?challenge.points:0, attempt:ChallengeAttempt={challengeId:id,answer:input.answer.toLocaleLowerCase(),correct,awardedPoints,answeredAt:now}; await db.send(new TransactWriteCommand({TransactItems:[{Update:{TableName:process.env.USERS_TABLE,Key:{PK:`USER#${input.userId}`,SK:'PROFILE'},UpdateExpression:'SET challengeAttempts = list_append(if_not_exists(challengeAttempts, :empty), :attempt), updatedAt = :now',ConditionExpression:'attribute_not_exists(challengeAttempts) OR size(challengeAttempts) = :attemptCount',ExpressionAttributeValues:{':empty':[],':attempt':[attempt],':attemptCount':attempts.length,':now':now}}},{Put:{TableName:process.env.AUDIT_TABLE,Item:{PK:`AUDIT#${now.slice(0,10)}`,SK:`${now}#ADMIN`,timestamp:now,action:'SUBMIT_CHALLENGE',userId:input.userId,metadata:{challengeId:id,correct,awardedPoints}}}}]})); return reply(200,{correct,awardedPoints,score:attempts.reduce((total,item)=>total+item.awardedPoints,0)+(user.communityScans??[]).reduce((total,scan)=>total+scan.awardedPoints,0)+(user.porLaCaraAttempts??[]).reduce((total,item)=>total+item.awardedPoints,awardedPoints),attempt}); };
+import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import { GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { normalizeAnswer, type Challenge, type ChallengeAttempt, type SubmitAnswerRequest, type SubmitAnswerResponse } from '@event-quest/shared';
+import { api, assertGameOpen, auditItem, challengeKey, db, getSettings, HttpError, parseBody, qrSignatureMatches, reply, requireSession, requireUser, scoreOf, tables, userKey } from '@event-quest/server';
+
+export const handler: APIGatewayProxyHandlerV2 = api(async event => {
+  const session = await requireSession(event, ['admin', 'player']);
+  const input = parseBody<SubmitAnswerRequest>(event);
+  const id = Number(event.pathParameters?.id);
+  if (!Number.isInteger(id) || typeof input.answer !== 'string' || !input.answer.trim() || input.answer.length > 500) throw new HttpError(400, 'VALIDATION_ERROR', 'El reto y la respuesta son obligatorios.');
+
+  const [challengeResult, user, settings] = await Promise.all([db.send(new GetCommand({ TableName: tables.challenges(), Key: challengeKey(id) })), requireUser(session), getSettings()]);
+  const challenge = challengeResult.Item as Challenge | undefined;
+  if (!challenge || !challenge.enabled) throw new HttpError(404, 'NOT_FOUND', 'No se ha encontrado el reto activo.');
+  assertGameOpen(settings);
+
+  const attempts = user.challengeAttempts ?? [];
+  if (attempts.some(attempt => attempt.challengeId === id)) throw new HttpError(409, 'ALREADY_PLAYED', 'Ya has jugado a este reto.');
+  if (challenge.qrProtected && !await qrSignatureMatches('challenge', id, input.code)) throw new HttpError(403, 'QR_REQUIRED', 'Escanea el QR de este reto para poder jugarlo.');
+  const answer = (challenge.answers ?? []).find(option => normalizeAnswer(option) === normalizeAnswer(input.answer!));
+  if (answer === undefined) throw new HttpError(400, 'VALIDATION_ERROR', 'Esa respuesta no es una de las opciones del reto.');
+
+  const correct = normalizeAnswer(answer) === normalizeAnswer(challenge.correctAnswer);
+  const now = new Date().toISOString();
+  const awardedPoints = correct ? challenge.points : 0;
+  const attempt: ChallengeAttempt = { challengeId: id, answer: answer.toLocaleLowerCase(), correct, awardedPoints, answeredAt: now };
+  try {
+    await db.send(new TransactWriteCommand({ TransactItems: [
+      // The size check makes a second simultaneous submission fail instead of counting twice.
+      { Update: { TableName: tables.users(), Key: userKey(user.userId), UpdateExpression: 'SET challengeAttempts = list_append(if_not_exists(challengeAttempts, :empty), :attempt), updatedAt = :now', ConditionExpression: 'attribute_not_exists(challengeAttempts) OR size(challengeAttempts) = :count', ExpressionAttributeValues: { ':empty': [], ':attempt': [attempt], ':count': attempts.length, ':now': now } } },
+      { Put: { TableName: tables.audit(), Item: auditItem('SUBMIT_CHALLENGE', event, session, { challengeId: id, correct, awardedPoints }) } },
+    ] }));
+  } catch (error) {
+    if ((error as { name?: string }).name === 'TransactionCanceledException') throw new HttpError(409, 'ANSWER_CONFLICT', 'Tu respuesta ya se está registrando. Vuelve a intentarlo.');
+    throw error;
+  }
+  const response: SubmitAnswerResponse = { correct, awardedPoints, score: scoreOf(user) + awardedPoints, attempt };
+  return reply(200, response);
+});

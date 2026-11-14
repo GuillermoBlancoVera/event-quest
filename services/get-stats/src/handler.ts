@@ -1,1 +1,27 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'; import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb'; import type { APIGatewayProxyHandlerV2 } from 'aws-lambda'; import type { User } from '@event-quest/shared'; const db=DynamoDBDocumentClient.from(new DynamoDBClient({})); const communityChallenges=5; const completed=(user:User)=>new Set((user.challengeAttempts??[]).filter(attempt=>attempt.correct).map(attempt=>attempt.challengeId)).size+new Set((user.communityScans??[]).map(scan=>scan.communityId)).size; const score=(user:User)=>(user.challengeAttempts??[]).reduce((total,attempt)=>total+attempt.awardedPoints,0)+(user.communityScans??[]).reduce((total,scan)=>total+scan.awardedPoints,0)+(user.porLaCaraAttempts??[]).reduce((total,attempt)=>total+attempt.awardedPoints,0); export const handler: APIGatewayProxyHandlerV2=async()=>{const [users,challenges]=await Promise.all([db.send(new ScanCommand({TableName:process.env.USERS_TABLE})),db.send(new ScanCommand({TableName:process.env.CHALLENGES_TABLE}))]); const players=(users.Items??[]) as User[], challengeItems=challenges.Items??[], total=challengeItems.filter(x=>x.enabled&&typeof x.challengeId==='number').length+communityChallenges, active=[...players].sort((a,b)=>completed(b)-completed(a))[0], fastest=[...players].sort((a,b)=>a.updatedAt.localeCompare(b.updatedAt))[0]; const item=(u:User|undefined)=>u&&({rank:0,userId:u.userId,name:u.name,team:u.team,group:u.group,score:score(u),completed:completed(u),lastActivityAt:u.updatedAt}); return {statusCode:200,headers:{'content-type':'application/json','access-control-allow-origin':'*'},body:JSON.stringify({players:players.length,challenges:total,completionPercentage:players.length&&total?Math.round(players.reduce((n,u)=>n+completed(u),0)/(players.length*total)*100):0,mostActivePlayer:item(active),fastestPlayer:item(fastest)})};};
+import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import type { Challenge, RankingEntry, Stats, User } from '@event-quest/shared';
+import { api, projection, reply, requireSession, requireUser, scanAll, scoreOf, tables } from '@event-quest/server';
+
+const communityChallenges = 5;
+const completed = (user: User) => new Set((user.challengeAttempts ?? []).filter(attempt => attempt.correct).map(attempt => attempt.challengeId)).size + new Set((user.communityScans ?? []).map(scan => scan.communityId)).size;
+const entry = (user: User | undefined): RankingEntry | undefined => user && ({ rank: 0, userId: user.userId, name: user.name, team: user.team, group: user.group, score: scoreOf(user), completed: completed(user), lastActivityAt: user.updatedAt, attempted: 0 });
+
+export const handler: APIGatewayProxyHandlerV2 = api(async event => {
+  await requireUser(await requireSession(event, ['admin', 'player']));
+  const [users, challenges] = await Promise.all([
+    scanAll<User>({ TableName: tables.users(), FilterExpression: '#p_entity = :entity', ExpressionAttributeValues: { ':entity': 'USER' }, ...projection(['entity', 'userId', 'name', 'role', 'team', 'group', 'challengeAttempts', 'communityScans', 'porLaCaraAttempts', 'updatedAt']) }),
+    scanAll<Challenge>({ TableName: tables.challenges() }),
+  ]);
+  const players = users.filter(user => user.role !== 'admin');
+  const total = challenges.filter(challenge => challenge.enabled && typeof challenge.challengeId === 'number').length + communityChallenges;
+  const mostActive = [...players].sort((a, b) => completed(b) - completed(a))[0];
+  const fastest = [...players].sort((a, b) => (a.updatedAt ?? '').localeCompare(b.updatedAt ?? ''))[0];
+  const stats: Stats = {
+    players: players.length,
+    challenges: total,
+    completionPercentage: players.length && total ? Math.round(players.reduce((sum, user) => sum + completed(user), 0) / (players.length * total) * 100) : 0,
+    mostActivePlayer: entry(mostActive),
+    fastestPlayer: entry(fastest),
+  };
+  return reply(200, stats);
+});

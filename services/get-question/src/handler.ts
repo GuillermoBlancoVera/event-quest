@@ -1,28 +1,30 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { Challenge, ChallengeListItem, User } from '@event-quest/shared';
+import type { Challenge, ChallengeListItem, QuestionResponse } from '@event-quest/shared';
+import { api, challengeKey, db, HttpError, qrSignatureMatches, reply, requireSession, requireUser, scanAll, tables } from '@event-quest/server';
 
-const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+export const handler: APIGatewayProxyHandlerV2 = api(async event => {
+  const session = await requireSession(event, ['admin', 'player']);
+  const user = await requireUser(session);
 
-export const handler: APIGatewayProxyHandlerV2 = async event => {
-  if (event.requestContext.http.path === '/challenges') {
-    const result = await db.send(new ScanCommand({ TableName: process.env.CHALLENGES_TABLE }));
-    const challenges = (result.Items ?? []) as Challenge[];
+  if (event.requestContext.http.path.endsWith('/challenges')) {
+    const challenges = await scanAll<Challenge>({ TableName: tables.challenges() });
     const response: ChallengeListItem[] = challenges.filter(challenge => challenge.enabled && typeof challenge.challengeId === 'number').map(({ challengeId, title }) => ({ challengeId, title })).sort((a, b) => a.title.localeCompare(b.title, 'es'));
     return reply(200, response);
   }
 
   const id = Number(event.pathParameters?.id);
-  if (!Number.isInteger(id)) return reply(400, { code: 'VALIDATION_ERROR', message: 'El identificador del reto debe ser un número.' });
-  const result = await db.send(new GetCommand({ TableName: process.env.CHALLENGES_TABLE, Key: { PK: `CHALLENGE#${id}`, SK: 'DETAIL' } }));
-  if (!result.Item || !result.Item.enabled) return reply(404, { code: 'NOT_FOUND', message: 'Este reto no está disponible.' });
-  const challenge = result.Item as Challenge;
-  const userId = event.queryStringParameters?.userId;
-  const userResult = userId ? await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${userId}`, SK: 'PROFILE' } })) : undefined;
-  const user = userResult?.Item as User | undefined;
-  const hasAttempted = Boolean(user?.challengeAttempts?.some(attempt => attempt.challengeId === id));
-  const { correctAnswer, ...question } = challenge;
-  return reply(200, hasAttempted ? { ...question, correctAnswer } : question);
-};
+  if (!Number.isInteger(id)) throw new HttpError(400, 'VALIDATION_ERROR', 'El identificador del reto debe ser un número.');
+  const result = await db.send(new GetCommand({ TableName: tables.challenges(), Key: challengeKey(id) }));
+  const challenge = result.Item as Challenge | undefined;
+  if (!challenge || !challenge.enabled) throw new HttpError(404, 'NOT_FOUND', 'Este reto no está disponible.');
+
+  const hasAttempted = (user.challengeAttempts ?? []).some(attempt => attempt.challengeId === id);
+  if (challenge.qrProtected && !hasAttempted && !await qrSignatureMatches('challenge', id, event.queryStringParameters?.code)) {
+    throw new HttpError(403, 'QR_REQUIRED', 'Escanea el QR de este reto para poder jugarlo.');
+  }
+  const { challengeId, title, question, answers, points, enabled, affiliationId } = challenge;
+  // The solution is only revealed to a player who has already used their single attempt.
+  const response: QuestionResponse = { challengeId, title, question, answers, points, enabled, affiliationId, correctAnswer: hasAttempted ? challenge.correctAnswer : undefined };
+  return reply(200, response);
+});
