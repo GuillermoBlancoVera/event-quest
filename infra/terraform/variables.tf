@@ -58,20 +58,3 @@ variable "api_rate_limit" {
   description = "Requests per second allowed across the whole API. The live ranking polls every 10 s per open phone, so keep headroom."
   default     = 100
 }
-
-variable "github_repository" {
-  type        = string
-  description = "owner/name of the repository allowed to deploy Lambda code through GitHub Actions. Null disables CI deploys."
-  default     = "GuillermoBlancoVera/event-quest"
-}
-
-variable "github_deploy_branch" {
-  type    = string
-  default = "develop"
-}
-
-variable "github_oidc_provider_arn" {
-  type        = string
-  description = "ARN of an existing GitHub OIDC provider in this account. Leave null to create one (an account can only have one)."
-  default     = null
-}

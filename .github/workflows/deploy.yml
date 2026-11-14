@@ -1,0 +1,77 @@
+name: Deploy
+on:
+  push: { branches: [develop] }
+  workflow_dispatch: {}
+permissions: { contents: read }
+# One deploy at a time, never cancelled half-way through a Terraform apply.
+concurrency: { group: deploy, cancel-in-progress: false }
+
+jobs:
+  # Infrastructure first, then the Lambda code, so the web that is published afterwards always
+  # finds the API it was built for.
+  backend:
+    # Skipped until scripts/bootstrap-ci.sh has been run once (it creates the role and the state bucket
+    # and prints the two repository variables).
+    if: vars.AWS_DEPLOY_ROLE_ARN != '' && vars.TF_STATE_BUCKET != ''
+    runs-on: ubuntu-latest
+    # id-token lets the job request short-lived AWS credentials (OIDC); no AWS keys are stored in GitHub.
+    permissions: { contents: read, id-token: write }
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
+      TF_IN_AUTOMATION: 'true'
+      TF_VAR_aws_region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+      TF_VAR_lambda_artifact_bucket: ${{ vars.TF_STATE_BUCKET }}
+      TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+    outputs:
+      api_url: ${{ steps.outputs.outputs.api_url }}
+      assets_url: ${{ steps.outputs.outputs.assets_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter "./services/*..." test
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      # A function that does not exist yet is created from these zips.
+      - name: Upload Lambda artifacts
+        run: scripts/deploy-lambdas.sh --upload "${{ vars.TF_STATE_BUCKET }}"
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: '~> 1.10', terraform_wrapper: false }
+      - name: Terraform init
+        run: terraform -chdir=infra/terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="region=$AWS_REGION"
+      - name: Terraform apply
+        run: terraform -chdir=infra/terraform apply -input=false -auto-approve
+      - name: Deploy Lambda code
+        run: scripts/deploy-lambdas.sh
+      - id: outputs
+        run: |
+          echo "api_url=$(terraform -chdir=infra/terraform output -raw api_url)" >> "$GITHUB_OUTPUT"
+          echo "assets_url=$(terraform -chdir=infra/terraform output -raw assets_base_url)" >> "$GITHUB_OUTPUT"
+
+  web:
+    needs: backend
+    # Publishes after a successful backend deploy, or on its own while the backend deploy is not set up.
+    # A failed backend deploy keeps the previous web online.
+    if: ${{ !cancelled() && (needs.backend.result == 'success' || needs.backend.result == 'skipped') }}
+    permissions: { contents: read, pages: write, id-token: write }
+    environment: { name: github-pages, url: '${{ steps.deployment.outputs.page_url }}' }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @event-quest/web build
+        env:
+          # Taken straight from Terraform; the repository variables are only a fallback.
+          VITE_API_URL: ${{ needs.backend.outputs.api_url || vars.VITE_API_URL }}
+          VITE_ASSETS_URL: ${{ needs.backend.outputs.assets_url || vars.VITE_ASSETS_URL }}
+      - uses: actions/upload-pages-artifact@v4
+        with: { path: apps/web/dist }
+      - id: deployment
+        uses: actions/deploy-pages@v4

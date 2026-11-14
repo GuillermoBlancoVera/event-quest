@@ -128,6 +128,6 @@ module "cloudwatch" {
   prefix         = local.prefix
   function_names = [for lambda in module.lambda : lambda.function_name]
   api_id         = module.api.id
-  alert_email    = var.alert_email
+  alert_email    = local.alert_email
   tags           = local.tags
 }
