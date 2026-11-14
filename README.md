@@ -45,22 +45,32 @@ Set `VITE_API_URL` (the HTTP API URL) and `VITE_ASSETS_URL` (the CloudFront URL)
 
 ## Deploy
 
-### First time in a new AWS account
+Every push to `develop` runs the **Deploy** workflow, in this order: tests, `terraform apply`, Lambda code, and finally the web, built with the API and CDN URLs that Terraform reports. If the infrastructure or the Lambdas fail, the web is not published, so the site never runs ahead of its API.
 
-1. Create a private S3 bucket for Lambda artifacts and upload the zips: `scripts/deploy-lambdas.sh --upload <artifact-bucket>`.
-2. `cd infra/terraform && terraform init && terraform apply -var='lambda_artifact_bucket=<artifact-bucket>' -var='alert_email=<you@example.com>'`. Confirm the SNS subscription email so alarms can reach you.
-3. In GitHub, set the repository variables from the Terraform outputs: `VITE_API_URL` (`api_url`), `VITE_ASSETS_URL` (`assets_base_url`) and `AWS_DEPLOY_ROLE_ARN` (`github_deploy_role_arn`).
-4. Create the first administrator: `USERS_TABLE=<users_table> node scripts/create-admin.mjs <name>`.
-5. Push to `develop`. The **Deploy web** workflow publishes the site and **Deploy Lambdas** ships the function code.
-6. Sign in at `/admin`, set the wedding code under *Ajustes*, and create players, questions and communities.
+### One-time setup
+
+GitHub Actions needs permission to act in the AWS account, and Terraform needs a shared place for its state. From a terminal with administrator AWS credentials, Terraform 1.10+ and the AWS CLI:
+
+```bash
+scripts/bootstrap-ci.sh
+```
+
+It creates a private bucket for the Terraform state and the Lambda zips, moves the existing `infra/terraform/terraform.tfstate` into it, creates a role that only the `develop` branch of this repository can assume (OIDC, no stored keys), and saves the repository variables `AWS_DEPLOY_ROLE_ARN`, `TF_STATE_BUCKET` and `AWS_REGION` (or prints them if the `gh` CLI is not installed). On an AWS account where this project was never deployed, run it with `--fresh`.
+
+Then:
+
+1. Optionally add the repository variable `ALERT_EMAIL` to receive cost and error alerts, and confirm the SNS subscription email after the first deploy.
+2. Run the workflow: *Actions → Deploy → Run workflow*, or push to `develop`.
+3. Create the first administrator: `USERS_TABLE=<users_table output> node scripts/create-admin.mjs <name>`.
+4. Sign in at `/admin`, set the wedding code under *Ajustes*, and create players, questions and communities.
+
+Until the setup has been done the workflow skips the backend and only publishes the web, using the `VITE_API_URL` and `VITE_ASSETS_URL` repository variables.
 
 ### Day to day
 
-- Code: merging to `develop` deploys the web and the Lambdas. `scripts/deploy-lambdas.sh` does the same for the Lambdas from a terminal.
-- Infrastructure: `terraform apply`. Terraform manages each function's configuration and permissions but not its code, so applying never rolls code back.
-- State: copy `infra/terraform/backend.tf.example` to `backend.tf` to keep the Terraform state in an encrypted, versioned S3 bucket instead of on one laptop.
-
-If the account already has a GitHub OIDC provider, pass its ARN as `github_oidc_provider_arn`; an account can only hold one.
+- Merge to `develop`. Infrastructure, Lambdas and web are deployed together.
+- The deploy role has administrator rights because Terraform manages IAM; its trust policy restricts it to this repository's `develop` branch. Protect that branch if more people get write access.
+- To run Terraform from a laptop: `terraform init -backend-config="bucket=<TF_STATE_BUCKET>"` in `infra/terraform`, then `plan` or `apply` with `-var='lambda_artifact_bucket=<TF_STATE_BUCKET>'`. Terraform manages each function's configuration and permissions but not its code, so applying never rolls code back.
 
 ## Admin panel
 
