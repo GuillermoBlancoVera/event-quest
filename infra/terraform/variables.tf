@@ -20,11 +20,58 @@ variable "custom_domain" {
 
 variable "web_origins" {
   type        = list(string)
-  description = "Allowed browser origins for the API and direct S3 media uploads."
-  default     = ["https://guillermoblancovera.github.io", "http://localhost:5173", "http://192.168.1.52:5173"]
+  description = "Browser origins allowed to call the API and upload to S3. Add http://localhost:5173 in a tfvars file only while developing."
+  default     = ["https://guillermoblancovera.github.io"]
 }
 
 variable "lambda_artifact_bucket" {
   type        = string
-  description = "S3 bucket holding Lambda zip artifacts."
+  description = "S3 bucket holding the Lambda zip artifacts used when a function is first created."
+}
+
+variable "media_max_image_mb" {
+  type        = number
+  description = "Largest photo a guest can upload, in MB. Enforced by S3 itself."
+  default     = 40
+}
+
+variable "media_max_video_mb" {
+  type        = number
+  description = "Largest video a guest can upload, in MB. Enforced by S3 itself."
+  default     = 500
+}
+
+variable "alert_email" {
+  type        = string
+  description = "Address that receives budget and error alerts. Leave null to create the alarms without notifications and skip the budget."
+  default     = null
+}
+
+variable "monthly_budget_usd" {
+  type        = number
+  description = "Monthly AWS spend that triggers the budget alerts (50 % and 100 %)."
+  default     = 10
+}
+
+variable "api_rate_limit" {
+  type        = number
+  description = "Requests per second allowed across the whole API. The live ranking polls every 10 s per open phone, so keep headroom."
+  default     = 100
+}
+
+variable "github_repository" {
+  type        = string
+  description = "owner/name of the repository allowed to deploy Lambda code through GitHub Actions. Null disables CI deploys."
+  default     = "GuillermoBlancoVera/event-quest"
+}
+
+variable "github_deploy_branch" {
+  type    = string
+  default = "develop"
+}
+
+variable "github_oidc_provider_arn" {
+  type        = string
+  description = "ARN of an existing GitHub OIDC provider in this account. Leave null to create one (an account can only have one)."
+  default     = null
 }
