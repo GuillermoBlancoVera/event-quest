@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import type { Affiliation, PlayerProfile, RankingResponse } from '@event-quest/shared';
 import { Page } from '../components/Page';
 import { PageLoader } from '../components/PageLoader';
+import { useSession } from '../lib/session';
 import { api } from '../lib/api';
 import { RankingAffiliationIcon } from './Ranking';
 import './CommunityChallenge.css';
@@ -10,14 +11,14 @@ import './CommunityChallenge.css';
 const target = 5;
 
 export function CommunityChallenge() {
-  const userId = localStorage.getItem('event-quest-user');
+  const userId = useSession()?.userId;
   const [profile, setProfile] = useState<PlayerProfile>();
   const [ranking, setRanking] = useState<RankingResponse>();
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!userId) return;
-    Promise.all([api.getProfile(userId), api.getRanking()]).then(([profile, ranking]) => { setProfile(profile); setRanking(ranking); }).catch(error => setError(error.message));
+    Promise.all([api.getProfile(), api.getRanking()]).then(([profile, ranking]) => { setProfile(profile); setRanking(ranking); }).catch(error => setError(error.message));
   }, [userId]);
 
   const communities = useMemo(() => {

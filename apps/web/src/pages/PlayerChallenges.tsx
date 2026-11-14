@@ -3,11 +3,12 @@ import { Link, Navigate } from 'react-router-dom';
 import type { ChallengeListItem, PlayerProfile, PorLaCaraChallengeListItem, Stats } from '@event-quest/shared';
 import { Page } from '../components/Page';
 import { PageLoader } from '../components/PageLoader';
+import { useSession } from '../lib/session';
 import { api } from '../lib/api';
 import './PlayerProfile.css';
 
 export function PlayerChallenges() {
-  const id = localStorage.getItem('event-quest-user');
+  const id = useSession()?.userId;
   const [profile, setProfile] = useState<PlayerProfile>();
   const [challenges, setChallenges] = useState<ChallengeListItem[]>();
   const [porLaCaraChallenges, setPorLaCaraChallenges] = useState<PorLaCaraChallengeListItem[]>();
@@ -17,7 +18,7 @@ export function PlayerChallenges() {
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([api.getProfile(id), api.getChallenges(), api.getPorLaCaraChallenges(), api.getStats()]).then(([profile, challenges, porLaCaraChallenges, stats]) => { setProfile(profile); setChallenges(challenges); setPorLaCaraChallenges(porLaCaraChallenges); setStats(stats); }).catch(error => setError(error.message));
+    Promise.all([api.getProfile(), api.getChallenges(), api.getPorLaCaraChallenges(), api.getStats()]).then(([profile, challenges, porLaCaraChallenges, stats]) => { setProfile(profile); setChallenges(challenges); setPorLaCaraChallenges(porLaCaraChallenges); setStats(stats); }).catch(error => setError(error.message));
   }, [id]);
 
   if (!id) return <Navigate to="/juego" replace />;

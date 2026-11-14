@@ -1,105 +1,219 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { randomUUID } from 'node:crypto';
+import { DeleteCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DeleteObjectsCommand, GetObjectCommand, HeadObjectCommand, PutObjectTaggingCommand, S3Client } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { CancelMediaUploadsRequest, CreateMediaUploadRequest, EventMedia, MediaPage, User } from '@event-quest/shared';
-import { verifyMediaSession } from '../../session.js';
+import type { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import type { CancelMediaUploadsRequest, CreateMediaUploadRequest, CreateMediaUploadResponse, EventMedia, MediaPage, PresignedUpload, UpdateMediaRequest } from '@event-quest/shared';
+import { api, auditItem, db, getSettings, HttpError, parseBody, queryAll, reply, requireSession, requireUser, tables, text, type Session } from '@event-quest/server';
+import { matchesSignature, maxBytes, pendingTagging, previewMaxBytes, resolveMediaType } from './media-types.js';
 
-const db = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
-const reply = (statusCode: number, body: unknown) => ({ statusCode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 const eventKey = 'EVENT#WEDDING';
-const mediaPageSize = 10;
-const isMedia = (contentType: unknown) => typeof contentType === 'string' && /^(image|video)\/(?:[\w.+-]+|\*)$/i.test(contentType);
+const pageSize = 10;
+const uploadExpirySeconds = 15 * 60;
+const pendingTtlSeconds = 2 * 24 * 60 * 60;
+const bucket = () => {
+  if (!process.env.MEDIA_BUCKET) throw new Error('MEDIA_BUCKET is not configured.');
+  return process.env.MEDIA_BUCKET;
+};
+
+type MediaItem = {
+  PK: string; SK: string; mediaId: string; batchId?: string; key: string; thumbnailKey?: string; displayKey?: string;
+  cancellationToken: string; authorId?: string; authorName: string; message?: string; contentType: string; createdAt: string;
+  status: 'PENDING' | 'UPLOADED' | 'DELETED'; expiresAt?: number;
+};
+
+/** Gallery access: players, admins, and guests whose session was issued for the current wedding code. */
+const requireGallerySession = async (event: APIGatewayProxyEventV2) => {
+  const session = await requireSession(event);
+  if (session.role === 'guest') {
+    const settings = await getSettings();
+    if (!settings?.eventCode || (settings.eventCodeVersion ?? 0) !== (session.ev ?? 0)) throw new HttpError(401, 'UNAUTHORIZED', 'El código de la boda ha cambiado. Vuelve a introducirlo.');
+  }
+  return session;
+};
+
+const findMedia = async (mediaId: string) => {
+  const items = await queryAll<MediaItem>({ TableName: tables.media(), IndexName: 'mediaId-index', KeyConditionExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':mediaId': mediaId } });
+  return items[0];
+};
+
+const objectKeys = (item: MediaItem) => [item.key, item.displayKey, item.thumbnailKey].filter((key): key is string => Boolean(key));
+
+/** Removes the files from S3 and then the record, so a deleted memory is really gone. */
+const destroyMedia = async (item: MediaItem) => {
+  const result = await s3.send(new DeleteObjectsCommand({ Bucket: bucket(), Delete: { Objects: objectKeys(item).map(Key => ({ Key })), Quiet: true } }));
+  if (result.Errors?.length) throw new Error(`Could not delete ${result.Errors.length} media objects.`);
+  await db.send(new DeleteCommand({ TableName: tables.media(), Key: { PK: item.PK, SK: item.SK } }));
+};
+
+const presignUpload = async (key: string, contentType: string, limit: number): Promise<PresignedUpload> => {
+  // A presigned POST lets S3 itself enforce the size limit and content type, which a presigned PUT cannot do.
+  const { url, fields } = await createPresignedPost(s3, {
+    Bucket: bucket(), Key: key, Expires: uploadExpirySeconds,
+    Fields: { 'Content-Type': contentType, tagging: pendingTagging },
+    Conditions: [['content-length-range', 1, limit]],
+  });
+  return { url, fields };
+};
+
+// Signing against the start of the hour keeps the URL stable for that hour, so browsers can cache the file.
+const signedView = (key: string) => {
+  const signingDate = new Date();
+  signingDate.setUTCMinutes(0, 0, 0);
+  return getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket(), Key: key, ResponseCacheControl: 'private, max-age=3600' }), { expiresIn: 2 * 60 * 60, signingDate });
+};
+
+const cursorFor = (item: MediaItem) => JSON.stringify({ PK: item.PK, SK: item.SK });
 const parseCursor = (cursor?: string) => {
   if (!cursor) return undefined;
   try {
     const key = JSON.parse(cursor) as { PK?: unknown; SK?: unknown };
-    return key.PK === eventKey && typeof key.SK === 'string' ? { PK: key.PK, SK: key.SK } : undefined;
-  } catch { return undefined; }
+    if (key.PK === eventKey && typeof key.SK === 'string') return { PK: key.PK, SK: key.SK };
+  } catch { /* handled below */ }
+  throw new HttpError(400, 'VALIDATION_ERROR', 'La página solicitada no es válida.');
 };
 
-export const handler: APIGatewayProxyHandlerV2 = async event => {
-  const method = event.requestContext.http.method;
-  const path = event.requestContext.http.path;
-
-  if (method === 'GET') {
-    const session = await verifyMediaSession(event.headers.authorization);
-    const paginated = event.queryStringParameters?.limit === String(mediaPageSize);
-    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': eventKey }, ScanIndexForward: false, Limit: paginated ? mediaPageSize : 100, ExclusiveStartKey: paginated ? parseCursor(event.queryStringParameters?.cursor) : undefined }));
-    const visible = (result.Items ?? []).filter(item => item.status === 'UPLOADED');
-    const items = await Promise.all(visible.map(async item => ({ mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt, canManage: item.authorId === session?.sub, url: await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }), { expiresIn: 900 }), displayUrl: item.displayKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }), { expiresIn: 900 }) : undefined, thumbnailUrl: item.thumbnailKey ? await getSignedUrl(s3, new GetObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.thumbnailKey }), { expiresIn: 900 }) : undefined } satisfies EventMedia)));
-    if (!paginated) return reply(200, items);
-    const page: MediaPage = { items, nextCursor: result.LastEvaluatedKey ? JSON.stringify(result.LastEvaluatedKey) : undefined };
-    return reply(200, page);
-  }
-
-  const body = JSON.parse(event.body ?? '{}') as CreateMediaUploadRequest & CancelMediaUploadsRequest;
-  if (method === 'POST' && path.endsWith('/uploads')) {
-    if (typeof body.fileName !== 'string' || !isMedia(body.contentType)) return reply(400, { message: 'Selecciona una imagen o un vídeo válido.' });
-    const now = new Date().toISOString();
-    const mediaId = crypto.randomUUID();
-    const batchId = typeof body.batchId === 'string' && /^[a-z0-9-]{1,64}$/i.test(body.batchId) ? body.batchId : mediaId;
-    const extension = body.fileName.trim().split('.').pop()?.replace(/[^a-z0-9]/gi, '').slice(0, 12);
-    const key = `media/${now.slice(0, 10)}/${mediaId}${extension ? `.${extension}` : ''}`;
-    const thumbnailKey = body.thumbnailContentType === 'image/jpeg' ? `media/thumbnails/${mediaId}.jpg` : undefined;
-    const displayKey = body.displayContentType === 'image/jpeg' && body.contentType.startsWith('image/') ? `media/display/${mediaId}.jpg` : undefined;
-    const message = typeof body.message === 'string' && body.message.trim() ? body.message.trim().slice(0, 500) : 'recuerditos';
-    const cancellationToken = crypto.randomUUID();
-    const session = await verifyMediaSession(event.headers.authorization);
-    const user = session
-      ? await db.send(new GetCommand({ TableName: process.env.USERS_TABLE, Key: { PK: `USER#${session.sub}`, SK: 'PROFILE' } }))
-      : undefined;
-    const author = user?.Item as User | undefined;
-    await db.send(new PutCommand({ TableName: process.env.MEDIA_TABLE, Item: { PK: eventKey, SK: `${now}#${mediaId}`, mediaId, batchId, key, thumbnailKey, displayKey, cancellationToken, authorId: author?.userId, authorName: author?.name ?? 'anónimo', message, contentType: body.contentType, createdAt: now, status: 'PENDING' } }));
-    const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: key, ContentType: body.contentType }), { expiresIn: 900 });
-    const thumbnailUploadUrl = thumbnailKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: thumbnailKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
-    const displayUploadUrl = displayKey ? await getSignedUrl(s3, new PutObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: displayKey, ContentType: 'image/jpeg' }), { expiresIn: 900 }) : undefined;
-    return reply(201, { mediaId, cancellationToken, key, uploadedAt: now, uploadUrl, thumbnailUploadUrl, displayUploadUrl });
-  }
-
-  if (method === 'POST' && path.endsWith('/cancel')) {
-    const uploads = Array.isArray(body.uploads) ? body.uploads.slice(0, 100) : [];
-    if (!uploads.length || uploads.some(upload => typeof upload?.mediaId !== 'string' || typeof upload?.cancellationToken !== 'string')) return reply(400, { message: 'No se han encontrado archivos para cancelar.' });
-    const now = new Date().toISOString();
-    await Promise.all(uploads.map(async upload => {
-      const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': upload.mediaId } }));
-      const item = result.Items?.[0];
-      if (!item || item.cancellationToken !== upload.cancellationToken || !['PENDING', 'UPLOADED'].includes(item.status)) return;
-      await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :status, deletedAt = :now', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':status': 'DELETED', ':now': now } }));
-    }));
-    return reply(200, { ok: true });
-  }
-
-  const mediaId = event.pathParameters?.id;
-  if (method === 'POST' && mediaId && path.endsWith('/complete')) {
-    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': mediaId } }));
-    const item = result.Items?.[0];
-    if (!item) return reply(404, { message: 'No se ha encontrado la subida.' });
-    try {
-      await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.key }));
-      if (item.displayKey) await s3.send(new HeadObjectCommand({ Bucket: process.env.MEDIA_BUCKET, Key: item.displayKey }));
-    } catch { return reply(409, { message: 'La subida todavía no se ha completado.' }); }
-    await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :status, uploadedAt = :now', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':status': 'UPLOADED', ':now': new Date().toISOString() } }));
-    return reply(200, { ok: true });
-  }
-
-  if ((method === 'PATCH' || method === 'DELETE') && mediaId) {
-    const session = await verifyMediaSession(event.headers.authorization);
-    if (!session) return reply(401, { message: 'Inicia sesión para gestionar tus recuerdos.' });
-    const result = await db.send(new QueryCommand({ TableName: process.env.MEDIA_TABLE, KeyConditionExpression: 'PK = :pk', FilterExpression: 'mediaId = :mediaId', ExpressionAttributeValues: { ':pk': eventKey, ':mediaId': mediaId } }));
-    const item = result.Items?.[0];
-    if (!item || item.status !== 'UPLOADED') return reply(404, { message: 'No se ha encontrado el recuerdo.' });
-    if (item.authorId !== session.sub) return reply(403, { message: 'No puedes gestionar este recuerdo.' });
-    const now = new Date().toISOString();
-    if (method === 'DELETE') {
-      await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :status, deletedAt = :now', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':status': 'DELETED', ':now': now } }));
-      return reply(200, { ok: true });
+const list = async (event: APIGatewayProxyEventV2, session: Session) => {
+  const visible: MediaItem[] = [];
+  let startKey = parseCursor(event.queryStringParameters?.cursor) as Record<string, unknown> | undefined;
+  let more = false;
+  // Keep reading until a full page of published items is collected; hidden items never shrink a page.
+  do {
+    const result = await db.send(new QueryCommand({ TableName: tables.media(), KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': eventKey }, ScanIndexForward: false, Limit: pageSize * 3, ExclusiveStartKey: startKey }));
+    const items = (result.Items ?? []) as MediaItem[];
+    for (const [index, item] of items.entries()) {
+      if (item.status !== 'UPLOADED') continue;
+      visible.push(item);
+      if (visible.length === pageSize) { more = index < items.length - 1 || Boolean(result.LastEvaluatedKey); break; }
     }
-    const message = typeof body.message === 'string' && body.message.trim() ? body.message.trim().slice(0, 500) : 'recuerditos';
-    await db.send(new UpdateCommand({ TableName: process.env.MEDIA_TABLE, Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET message = :message, updatedAt = :now', ExpressionAttributeValues: { ':message': message, ':now': now } }));
+    startKey = result.LastEvaluatedKey;
+  } while (visible.length < pageSize && startKey);
+
+  const items = await Promise.all(visible.map(async (item): Promise<EventMedia> => ({
+    mediaId: item.mediaId, batchId: item.batchId ?? item.mediaId, authorName: item.authorName, message: item.message, contentType: item.contentType, createdAt: item.createdAt,
+    canManage: session.role === 'admin' || item.authorId === session.sub,
+    url: await signedView(item.key),
+    displayUrl: item.displayKey ? await signedView(item.displayKey) : undefined,
+    thumbnailUrl: item.thumbnailKey ? await signedView(item.thumbnailKey) : undefined,
+  })));
+  const page: MediaPage = { items, nextCursor: more ? cursorFor(visible[visible.length - 1]) : undefined };
+  return reply(200, page);
+};
+
+const createUpload = async (event: APIGatewayProxyEventV2, session: Session) => {
+  const body = parseBody<CreateMediaUploadRequest>(event);
+  const media = typeof body.fileName === 'string' ? resolveMediaType(body.contentType, body.fileName) : undefined;
+  if (!media) throw new HttpError(400, 'UNSUPPORTED_MEDIA', 'Solo se pueden subir fotos y vídeos (JPG, PNG, HEIC, WebP, GIF, MP4, MOV…).');
+  const limit = maxBytes(media.kind);
+  const megabytes = Math.round(limit / 1024 / 1024);
+  if (!Number.isInteger(body.size) || body.size! < 1) throw new HttpError(400, 'VALIDATION_ERROR', 'No se ha podido leer el tamaño del archivo.');
+  if (body.size! > limit) throw new HttpError(413, 'FILE_TOO_LARGE', `${media.kind === 'video' ? 'El vídeo' : 'La foto'} supera el máximo de ${megabytes} MB.`);
+  const wantsPreview = (size: unknown) => Number.isInteger(size) && (size as number) > 0 && (size as number) <= previewMaxBytes;
+
+  const author = session.role === 'guest' ? undefined : await requireUser(session);
+  const now = new Date().toISOString();
+  const mediaId = randomUUID();
+  const item: MediaItem = {
+    PK: eventKey, SK: `${now}#${mediaId}`, mediaId,
+    batchId: typeof body.batchId === 'string' && /^[a-z0-9-]{1,64}$/i.test(body.batchId) ? body.batchId : mediaId,
+    key: `media/${now.slice(0, 10)}/${mediaId}.${media.extension}`,
+    thumbnailKey: wantsPreview(body.thumbnailSize) ? `media/thumbnails/${mediaId}.jpg` : undefined,
+    displayKey: media.kind === 'image' && wantsPreview(body.displaySize) ? `media/display/${mediaId}.jpg` : undefined,
+    cancellationToken: randomUUID(),
+    authorId: session.sub, authorName: author?.name ?? 'anónimo',
+    message: text(body.message, 500) ?? 'recuerditos',
+    contentType: media.contentType, createdAt: now, status: 'PENDING',
+    // Uploads that are never completed disappear on their own (DynamoDB TTL here, a lifecycle rule in S3).
+    expiresAt: Math.floor(Date.now() / 1000) + pendingTtlSeconds,
+  };
+  await db.send(new PutCommand({ TableName: tables.media(), Item: item }));
+  const response: CreateMediaUploadResponse = {
+    mediaId, cancellationToken: item.cancellationToken, contentType: media.contentType,
+    upload: await presignUpload(item.key, media.contentType, limit),
+    thumbnailUpload: item.thumbnailKey ? await presignUpload(item.thumbnailKey, 'image/jpeg', previewMaxBytes) : undefined,
+    displayUpload: item.displayKey ? await presignUpload(item.displayKey, 'image/jpeg', previewMaxBytes) : undefined,
+  };
+  return reply(201, response);
+};
+
+const firstBytes = async (key: string) => {
+  const object = await s3.send(new GetObjectCommand({ Bucket: bucket(), Key: key, Range: 'bytes=0-31' }));
+  return object.Body ? await object.Body.transformToByteArray() : new Uint8Array();
+};
+
+const complete = async (event: APIGatewayProxyEventV2, session: Session, mediaId: string) => {
+  const item = await findMedia(mediaId);
+  // Only the session that started an upload can publish it, and only once.
+  if (!item || item.authorId !== session.sub) throw new HttpError(404, 'NOT_FOUND', 'No se ha encontrado la subida.');
+  if (item.status === 'UPLOADED') return reply(200, { ok: true });
+  if (item.status !== 'PENDING') throw new HttpError(409, 'NOT_PENDING', 'Esta subida ya no se puede completar.');
+
+  const kind = item.contentType.startsWith('video/') ? 'video' : 'image';
+  try {
+    const head = await s3.send(new HeadObjectCommand({ Bucket: bucket(), Key: item.key }));
+    if ((head.ContentLength ?? 0) > maxBytes(kind)) throw new HttpError(413, 'FILE_TOO_LARGE', 'El archivo es demasiado grande.');
+    for (const key of [item.displayKey, item.thumbnailKey]) if (key) await s3.send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
+  } catch (error) {
+    if (error instanceof HttpError) { await destroyMedia(item); throw error; }
+    const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+    // Without s3:ListBucket a missing object is reported as 403 rather than 404; both mean "not uploaded yet".
+    if (status === 404 || status === 403) throw new HttpError(409, 'UPLOAD_INCOMPLETE', 'La subida todavía no se ha completado.');
+    throw error;
+  }
+  // The declared type is only a label; check that the bytes really are a photo or a video before publishing.
+  const previews = [item.displayKey, item.thumbnailKey].filter((key): key is string => Boolean(key));
+  const genuine = matchesSignature(kind, await firstBytes(item.key)) && (await Promise.all(previews.map(async key => matchesSignature('image', await firstBytes(key))))).every(Boolean);
+  if (!genuine) {
+    await destroyMedia(item);
+    await db.send(new PutCommand({ TableName: tables.audit(), Item: auditItem('REJECT_MEDIA', event, session, { mediaId, contentType: item.contentType }) }));
+    throw new HttpError(422, 'UNSUPPORTED_MEDIA', 'El archivo no parece una foto ni un vídeo válido.');
+  }
+  await Promise.all(objectKeys(item).map(Key => s3.send(new PutObjectTaggingCommand({ Bucket: bucket(), Key, Tagging: { TagSet: [{ Key: 'state', Value: 'ready' }] } }))));
+  try {
+    await db.send(new UpdateCommand({ TableName: tables.media(), Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET #status = :uploaded, uploadedAt = :now REMOVE expiresAt', ConditionExpression: '#status = :pending', ExpressionAttributeNames: { '#status': 'status' }, ExpressionAttributeValues: { ':uploaded': 'UPLOADED', ':pending': 'PENDING', ':now': new Date().toISOString() } }));
+  } catch (error) {
+    if ((error as { name?: string }).name === 'ConditionalCheckFailedException') throw new HttpError(409, 'NOT_PENDING', 'Esta subida ya no se puede completar.');
+    throw error;
+  }
+  return reply(200, { ok: true });
+};
+
+const cancel = async (event: APIGatewayProxyEventV2, session: Session) => {
+  const body = parseBody<CancelMediaUploadsRequest>(event);
+  const uploads = Array.isArray(body.uploads) ? body.uploads.slice(0, 100) : [];
+  if (!uploads.length || uploads.some(upload => typeof upload?.mediaId !== 'string' || typeof upload?.cancellationToken !== 'string')) throw new HttpError(400, 'VALIDATION_ERROR', 'No se han encontrado archivos para cancelar.');
+  await Promise.all(uploads.map(async upload => {
+    const item = await findMedia(upload.mediaId);
+    if (item && item.authorId === session.sub && item.cancellationToken === upload.cancellationToken) await destroyMedia(item);
+  }));
+  return reply(200, { ok: true });
+};
+
+const manage = async (event: APIGatewayProxyEventV2, session: Session, mediaId: string) => {
+  const item = await findMedia(mediaId);
+  if (!item || item.status !== 'UPLOADED') throw new HttpError(404, 'NOT_FOUND', 'No se ha encontrado el recuerdo.');
+  if (session.role !== 'admin' && item.authorId !== session.sub) throw new HttpError(403, 'FORBIDDEN', 'No puedes gestionar este recuerdo.');
+  if (event.requestContext.http.method === 'DELETE') {
+    await destroyMedia(item);
+    await db.send(new PutCommand({ TableName: tables.audit(), Item: auditItem('DELETE_MEDIA', event, session, { mediaId, authorId: item.authorId }) }));
     return reply(200, { ok: true });
   }
-  return reply(404, { message: 'Ruta de recuerdos no encontrada.' });
+  const body = parseBody<UpdateMediaRequest>(event);
+  await db.send(new UpdateCommand({ TableName: tables.media(), Key: { PK: item.PK, SK: item.SK }, UpdateExpression: 'SET message = :message, updatedAt = :now', ConditionExpression: 'attribute_exists(PK)', ExpressionAttributeValues: { ':message': text(body.message, 500) ?? 'recuerditos', ':now': new Date().toISOString() } }));
+  return reply(200, { ok: true });
 };
+
+export const handler: APIGatewayProxyHandlerV2 = api(async event => {
+  const { method, path } = event.requestContext.http;
+  const session = await requireGallerySession(event);
+  const mediaId = event.pathParameters?.id;
+
+  if (method === 'GET') return list(event, session);
+  if (method === 'POST' && path.endsWith('/uploads')) return createUpload(event, session);
+  if (method === 'POST' && path.endsWith('/cancel')) return cancel(event, session);
+  if (method === 'POST' && mediaId && path.endsWith('/complete')) return complete(event, session, mediaId);
+  if ((method === 'PATCH' || method === 'DELETE') && mediaId) return manage(event, session, mediaId);
+  throw new HttpError(404, 'NOT_FOUND', 'Ruta de recuerdos no encontrada.');
+});

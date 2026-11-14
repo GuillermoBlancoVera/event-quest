@@ -5,7 +5,10 @@ import Share from 'yet-another-react-lightbox/plugins/share';
 import Video from 'yet-another-react-lightbox/plugins/video';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
 import 'yet-another-react-lightbox/styles.css';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { uploadFile, UploadCancelledError } from '../lib/assets';
+import { setSession, useSession } from '../lib/session';
 import { PageLoader } from '../components/PageLoader';
 import { FloralDivider } from '../components/Botanicals';
 import './MediaGallery.css';
@@ -37,7 +40,9 @@ export function MediaGallery() {
   const [editMessage, setEditMessage] = useState('');
   const [manageStatus, setManageStatus] = useState('');
   const [managing, setManaging] = useState(false);
-  const hasSession = Boolean(localStorage.getItem('event-quest-session-token'));
+  const session = useSession();
+  const sessionToken = session?.token;
+  const hasSession = Boolean(session?.userId);
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isAndroid = /Android/i.test(navigator.userAgent);
   const load = () => api.getMedia().then(page => { setMedia(page.items); setNextMediaCursor(page.nextCursor); }).catch(error => { setMedia([]); setNextMediaCursor(undefined); setStatus(error instanceof Error ? error.message : 'No se han podido cargar los recuerdos.'); });
@@ -54,7 +59,8 @@ export function MediaGallery() {
       setLoadingMoreMedia(false);
     }
   }, [loadingMoreMedia, nextMediaCursor]);
-  useEffect(() => { load(); }, []);
+  // Reload whenever the session changes: the gallery is only readable with a guest or player session.
+  useEffect(() => { if (sessionToken) { setMedia(undefined); load(); } }, [sessionToken]);
   useEffect(() => {
     const target = loadMoreRef.current;
     if (!target || !nextMediaCursor) return;
@@ -81,8 +87,7 @@ export function MediaGallery() {
     setLoginStatus('');
     try {
       const user = await api.login({ name: loginName, password: loginPassword });
-      localStorage.setItem('event-quest-user', user.userId);
-      localStorage.setItem('event-quest-session-token', user.sessionToken);
+      setSession(user.sessionToken, user.userId);
       setLoginPassword('');
       setShowLogin(false);
     } catch (error) {
@@ -137,16 +142,12 @@ export function MediaGallery() {
         const thumbnail = contentType.startsWith('video/') ? await createVideoThumbnail(file) : undefined;
         const display = await createDisplayImage(file, contentType);
         ensureActive();
-        const upload = await api.createMediaUpload({ batchId, fileName: file.name, contentType, message, thumbnailContentType: thumbnail ? 'image/jpeg' : undefined, displayContentType: display ? 'image/jpeg' : undefined });
+        const upload = await api.createMediaUpload({ batchId, fileName: file.name, contentType, size: file.size, message, thumbnailSize: thumbnail?.size, displaySize: display?.size });
         uploads.push({ mediaId: upload.mediaId, cancellationToken: upload.cancellationToken });
         ensureActive();
-        await uploadWithProgress(upload.uploadUrl, contentType, file, loaded => setUploadProgress(Math.round(loaded / file.size * 100)), abort.signal);
-        if (display && upload.displayUploadUrl) {
-          await uploadWithProgress(upload.displayUploadUrl, 'image/jpeg', display, undefined, abort.signal);
-        }
-        if (thumbnail && upload.thumbnailUploadUrl) {
-          await uploadWithProgress(upload.thumbnailUploadUrl, 'image/jpeg', thumbnail, undefined, abort.signal);
-        }
+        await uploadFile(upload.upload, file, loaded => setUploadProgress(Math.round(loaded / file.size * 100)), abort.signal);
+        if (display && upload.displayUpload) await uploadFile(upload.displayUpload, display, undefined, abort.signal);
+        if (thumbnail && upload.thumbnailUpload) await uploadFile(upload.thumbnailUpload, thumbnail, undefined, abort.signal);
         ensureActive();
         await api.completeMediaUpload(upload.mediaId);
         ensureActive();
@@ -169,6 +170,8 @@ export function MediaGallery() {
     void uploadFiles();
   };
 
+  if (!session) return <GalleryAccess />;
+
   return <section className="page media-gallery">
     <header className="media-gallery-header"><h1>Galería</h1><FloralDivider /></header>
     {!media ? <PageLoader label="Cargando recuerdos" /> : media.length ? <><div className="media-grid">{groupMedia(media).map(group => <MediaCard key={group.id} group={group} onEdit={item => { setEditing(item); setEditMessage(item.message || 'recuerditos'); setManageStatus(''); }} onDelete={item => { setDeleting(item); setManageStatus(''); }} onPreview={(items, index) => setPreviewing({ items, index })} />)}</div>{nextMediaCursor && <div className={loadingMoreMedia ? 'media-load-more is-loading' : 'media-load-more'} ref={loadMoreRef} role={loadingMoreMedia ? 'status' : undefined} aria-label={loadingMoreMedia ? 'Cargando más recuerdos' : undefined}>{loadingMoreMedia && <><span aria-hidden="true" />Cargando recuerdos…</>}</div>}</> : <div className="media-empty"><h2>Aún no hay recuerdos</h2><p>Estrena la galería con una foto o un vídeo.</p></div>}
@@ -176,7 +179,7 @@ export function MediaGallery() {
     {open && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-upload-title"><div>{busy ? <div className="media-upload-progress" role="status"><span aria-hidden="true" /><p id="media-upload-title">Subiendo archivos</p><strong>{status}</strong><div className="media-upload-progress-bar" aria-label={`${uploadProgress}% completado`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress} role="progressbar"><span style={{ width: `${uploadProgress}%` }} /><b>{uploadProgress}%</b></div><button type="button" onClick={cancelUpload}>Cancelar subida</button></div> : <><button className="media-close" onClick={close} aria-label="Cerrar">×</button><h2 id="media-upload-title">Sube fotos o vídeos</h2><p>Puedes elegir varios archivos a la vez. Todos serán visibles para las personas de la boda. {hasSession ? 'Las fotos y vídeos se subirán con tu nombre.' : 'La subida será anónima.'}</p>{!hasSession && (showLogin ? <form className="media-login-form" onSubmit={login}><label>Nombre<input required value={loginName} onChange={event => setLoginName(event.target.value)} /></label><label>Contraseña<input required type="password" value={loginPassword} onChange={event => setLoginPassword(event.target.value)} /></label>{loginStatus && <p className="notice">{loginStatus}</p>}<button className="button" disabled={loggingIn}>{loggingIn ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => setShowLogin(false)}>Seguir de forma anónima</button></form> : <p className="media-login">¿Quieres que aparezca tu nombre? <button type="button" onClick={() => setShowLogin(true)}>Inicia sesión</button>.</p>)}<form className="media-form" onSubmit={submit}><input id="event-media-file" type="file" accept="image/*,video/*" multiple onChange={choose} /><input id="event-media-camera" type="file" accept="image/*" capture="environment" onChange={choose} /><input id="event-media-video-camera" type="file" accept="video/*" capture="environment" onChange={choose} />{isAndroid ? <button className="button" type="button" onClick={() => setAndroidPickerOpen(true)}>Seleccionar archivos</button> : <label className="button" htmlFor="event-media-file">Seleccionar archivos</label>}{files.length > 0 && <p className="media-file">{files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`}</p>}<label htmlFor="event-media-message">Mensaje opcional<textarea id="event-media-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{`Subir ${files.length || ''} ${files.length === 1 ? 'archivo' : 'archivos'}`}</button></form>{isAndroid && androidPickerOpen && <div className="media-choice-modal" role="dialog" aria-modal="true" aria-label="Elegir archivo"><div><button className="media-close" type="button" onClick={() => setAndroidPickerOpen(false)} aria-label="Cerrar">×</button><h2>¿Qué quieres subir?</h2><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-file')?.click(); }}>Elegir del carrete</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-camera')?.click(); }}>Hacer foto</button><button className="button" type="button" onClick={() => { setAndroidPickerOpen(false); document.getElementById('event-media-video-camera')?.click(); }}>Grabar vídeo</button></div></div>}</>}</div></div>}
     {confirmWithoutMessage && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-empty-message-title"><div><button className="media-close" type="button" onClick={() => setConfirmWithoutMessage(false)} aria-label="Cerrar">×</button><h2 id="media-empty-message-title">¿Subir sin descripción?</h2><p>¿Estás seguro? Puedes añadir una descripción opcional antes de continuar.</p><label className="media-confirm-message" htmlFor="event-media-confirm-message">Descripción opcional<textarea id="event-media-confirm-message" maxLength={500} value={message} onChange={event => setMessage(event.target.value)} placeholder="momento comida, cuando se cayó el tío…" autoFocus /></label><div className="media-confirm-actions"><button className="button" type="button" onClick={() => { setConfirmWithoutMessage(false); void uploadFiles(); }}>{message.trim() ? 'Subir archivo' : 'Subir sin descripción'}</button><button type="button" onClick={() => setConfirmWithoutMessage(false)}>Volver a editar</button></div></div></div>}
     {editing && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title"><div><button className="media-close" onClick={() => !managing && setEditing(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">EDITAR RECUERDO</p><h2 id="media-edit-title">Cambia la descripción</h2><p className="media-previous-message">Texto actual: “{editing.message || 'recuerditos'}”</p><form className="media-form" onSubmit={edit}><label htmlFor="event-media-edit-message">Nueva descripción<textarea id="event-media-edit-message" maxLength={500} value={editMessage} onChange={event => setEditMessage(event.target.value)} /></label>{manageStatus && <p className="notice">{manageStatus}</p>}<button className="button" disabled={managing}>{managing ? 'Guardando…' : 'Guardar cambios'}</button></form></div></div>}
-    {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Dejará de aparecer en la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
+    {deleting && <div className="media-modal" role="dialog" aria-modal="true" aria-labelledby="media-delete-title"><div><button className="media-close" onClick={() => !managing && setDeleting(undefined)} aria-label="Cerrar">×</button><p className="eyebrow">BORRAR RECUERDO</p><h2 id="media-delete-title">¿Quieres borrar {deleting.contentType.startsWith('video/') ? 'este vídeo' : 'esta foto'}?</h2><p>Se borrará definitivamente de la galería.</p>{manageStatus && <p className="notice">{manageStatus}</p>}<div className="media-confirm-actions"><button className="button" onClick={remove} disabled={managing}>{managing ? 'Borrando…' : 'Sí, borrar'}</button><button type="button" onClick={() => setDeleting(undefined)} disabled={managing}>Cancelar</button></div></div></div>}
     {previewing && <Lightbox open close={() => setPreviewing(undefined)} index={previewing.index} on={{ view: ({ index }) => setPreviewing(current => current?.index === index ? current : current ? { ...current, index } : current) }} className={`media-lightbox${previewing.items.length < 2 ? ' media-lightbox-single' : ''}`} plugins={[Video, Zoom, Share]} labels={{ Share: 'Compartir' }} styles={{ root: { '--yarl__color_backdrop': 'var(--color-midnight)', '--yarl__color_button': 'var(--color-cream)', '--yarl__color_button_active': 'var(--color-butter)', '--yarl__slide_icon_loading_color': 'var(--color-butter)', '--yarl__button_filter': 'none' }, slide: { paddingTop: '4.5rem', paddingBottom: '6.5rem' } }} render={{ buttonZoom: () => null, controls: () => <>{sharing && <span className="media-share-loader" role="status" aria-label="Preparando archivo para compartir" />}{previewing.items.length > 1 && <div className="media-lightbox-thumbnails" aria-label="Archivos de esta subida">{previewing.items.map((item, index) => <button ref={element => { thumbnailRefs.current[index] = element; }} className={index === previewing.index ? 'active' : ''} type="button" key={item.mediaId} onClick={() => setPreviewing(current => current ? { ...current, index } : current)} aria-label={`Ver archivo ${index + 1}`} aria-current={index === previewing.index ? true : undefined}>{item.contentType.startsWith('video/') ? <>{item.thumbnailUrl && <img src={item.thumbnailUrl} alt="" />}<span aria-hidden="true" /></> : <img src={item.displayUrl ?? item.url} alt="" />}</button>)}</div>}</> }} zoom={{ scrollToZoom: true }} share={{ share: ({ slide }) => { setSharing(true); void shareMedia(slide, () => setSharing(false)).catch(() => undefined).finally(() => setSharing(false)); } }} controller={{ closeOnPullDown: true, closeOnPullUp: true, disableSwipeNavigation: isIos }} carousel={{ imageFit: 'contain', preload: 1, finite: previewing.items.length < 2 }} slides={previewing.items.map(item => item.contentType.startsWith('video/') ? { type: 'video' as const, poster: item.thumbnailUrl, sources: [{ src: item.url, type: item.contentType }], controls: true, playsInline: true, share: item.url } : { src: item.displayUrl ?? item.url, alt: item.message || 'Recuerdo de la boda', share: item.url })} />}
   </section>;
 }
@@ -187,21 +190,6 @@ const extension = (file: File) => file.name.toLocaleLowerCase().split('.').pop()
 const isMediaFile = (file: File) => file.type.startsWith('image/') || file.type.startsWith('video/') || imageExtensions.has(extension(file)) || videoExtensions.has(extension(file));
 const mediaType = (file: File) => file.type || (videoExtensions.has(extension(file)) ? 'video/*' : 'image/*');
 const createBatchId = () => typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-class UploadCancelledError extends Error { constructor() { super('La subida se ha cancelado.'); } }
-const uploadWithProgress = (url: string, contentType: string, body: Blob, onProgress?: (loaded: number) => void, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
-  const request = new XMLHttpRequest();
-  const cleanup = () => signal?.removeEventListener('abort', abort);
-  const abort = () => request.abort();
-  request.open('PUT', url);
-  request.setRequestHeader('content-type', contentType);
-  request.upload.onprogress = event => { if (event.lengthComputable) onProgress?.(event.loaded); };
-  request.onload = () => { cleanup(); request.status >= 200 && request.status < 300 ? resolve() : reject(new Error('No se ha podido subir el archivo.')); };
-  request.onerror = () => { cleanup(); reject(new Error('No se ha podido subir el archivo.')); };
-  request.onabort = () => { cleanup(); reject(new UploadCancelledError()); };
-  if (signal?.aborted) { reject(new UploadCancelledError()); return; }
-  signal?.addEventListener('abort', abort, { once: true });
-  request.send(body);
-});
 const createDisplayImage = (file: File, contentType: string): Promise<Blob | undefined> => new Promise(resolve => {
   if (!contentType.startsWith('image/') || contentType === 'image/gif') { resolve(undefined); return; }
   const image = new Image();
@@ -287,4 +275,46 @@ function MediaCard({ group, onEdit, onDelete, onPreview }: { group: MediaGroup; 
   const change = (direction: number) => { setPlayingVideo(undefined); setIndex((activeIndex + direction + group.items.length) % group.items.length); };
 
   return <article>{item.canManage && <div className="media-card-actions"><button type="button" onClick={() => onEdit(item)} aria-label="Editar descripción"><EditIcon /></button><button type="button" onClick={() => onDelete(item)} aria-label="Borrar recuerdo"><DeleteIcon /></button></div>}{multiple && <span className="media-card-count">{activeIndex + 1}/{group.items.length}</span>}<div className="media-carousel">{multiple && <><button className="media-card-arrow media-card-arrow-left" type="button" onClick={() => change(-1)} aria-label="Ver archivo anterior">‹</button><button className="media-card-arrow media-card-arrow-right" type="button" onClick={() => change(1)} aria-label="Ver archivo siguiente">›</button></>}{!item.contentType.startsWith('video/') && !loaded.has(item.mediaId) && <span className="media-card-loader" role="status" aria-label="Cargando" />}{group.items.map((entry, slide) => <div className={`media-slide${slide === activeIndex ? ' active' : ''}`} key={entry.mediaId}>{entry.contentType.startsWith('video/') ? playingVideo === entry.mediaId ? <video controls autoPlay preload="auto" src={entry.url} /> : <button className="media-video-preview" type="button" onClick={() => setPlayingVideo(entry.mediaId)}>{entry.thumbnailUrl && <img loading="eager" src={entry.thumbnailUrl} alt="Vista previa del vídeo" onLoad={() => markReady(slide)} />}<span aria-hidden="true" /></button> : <button className="media-image-preview" type="button" onClick={() => onPreview(group.items, slide)}><img loading="eager" src={entry.displayUrl ?? entry.url} alt={entry.message || 'Recuerdo de la boda'} onLoad={() => markReady(slide)} /></button>}</div>)}</div><p>{item.message || 'recuerditos'}</p><small>{item.authorName === 'anónimo' ? '' : `${item.authorName} · `}{new Date(item.createdAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'medium' })}</small></article>;
+}
+
+/** Shown to visitors without a session: the gallery opens with the wedding code or with a player account. */
+function GalleryAccess() {
+  const [params, setParams] = useSearchParams();
+  const linkCode = params.get('codigo');
+  const [mode, setMode] = useState<'code' | 'login'>('code');
+  const [code, setCode] = useState(linkCode ?? '');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+  const redeemedLink = useRef(false);
+
+  const enter = async (action: () => Promise<void>) => {
+    setBusy(true); setStatus('');
+    try { await action(); }
+    catch (error) { setStatus(error instanceof Error ? error.message : 'No se ha podido entrar en la galería.'); }
+    finally { setBusy(false); }
+  };
+  const redeem = (value: string) => enter(async () => {
+    const guest = await api.createEventSession({ code: value });
+    // Drop the code from the address bar so it is not shared by accident with a screenshot or a copied link.
+    setParams(current => { current.delete('codigo'); return current; }, { replace: true });
+    setSession(guest.sessionToken);
+  });
+  const login = () => enter(async () => {
+    const user = await api.login({ name, password });
+    setSession(user.sessionToken, user.userId);
+  });
+  // A QR on the tables can carry the code, so guests get in without typing anything.
+  useEffect(() => { if (linkCode && !redeemedLink.current) { redeemedLink.current = true; void redeem(linkCode); } }, [linkCode]);
+
+  return <section className="page media-gallery">
+    <header className="media-gallery-header"><h1>Galería</h1><FloralDivider /></header>
+    <div className="media-access">
+      <h2>Solo para invitados</h2>
+      {mode === 'code'
+        ? <form className="media-login-form" onSubmit={event => { event.preventDefault(); void redeem(code); }}><p>Introduce el código de la boda para ver y subir recuerdos. Lo encontrarás en las mesas.</p><label>Código de la boda<input required autoComplete="off" autoCapitalize="none" value={code} onChange={event => setCode(event.target.value)} /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Comprobando…' : 'Entrar a la galería'}</button><button className="media-login-cancel" type="button" onClick={() => { setMode('login'); setStatus(''); }}>Tengo usuario del juego</button></form>
+        : <form className="media-login-form" onSubmit={event => { event.preventDefault(); void login(); }}><p>Entra con tu usuario del juego y tus recuerdos aparecerán con tu nombre.</p><label>Nombre<input required value={name} onChange={event => setName(event.target.value)} /></label><label>Contraseña<input required type="password" value={password} onChange={event => setPassword(event.target.value)} /></label>{status && <p className="notice">{status}</p>}<button className="button" disabled={busy}>{busy ? 'Entrando…' : 'Iniciar sesión'}</button><button className="media-login-cancel" type="button" onClick={() => { setMode('code'); setStatus(''); }}>Usar el código de la boda</button></form>}
+    </div>
+  </section>;
 }

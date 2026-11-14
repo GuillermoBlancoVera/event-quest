@@ -8,7 +8,7 @@ const venueImages = [
   { src: 'https://images.unsplash.com/photo-1478146896981-b80fe463b330?auto=format&fit=crop&w=1000&q=85', alt: 'Finca de celebración en el campo' },
 ];
 
-// Con HashRouter un href="#seccion" se interpreta como una ruta, así que el desplazamiento se hace a mano.
+// El desplazamiento se hace a mano para que sea suave y no cambie la URL.
 const scrollToSection = (id: string) => (event: MouseEvent) => {
   event.preventDefault();
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });

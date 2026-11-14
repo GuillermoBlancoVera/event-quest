@@ -1,0 +1,25 @@
+# Remote state: copy this file to backend.tf, fill in the bucket, and run
+#
+#   terraform init -migrate-state
+#
+# Until then the state lives only on the machine that runs Terraform. That file contains the
+# session secret in clear text and is the only record of what Terraform manages, so losing the
+# laptop means losing control of the infrastructure.
+#
+# Create the bucket once, by hand, before migrating:
+#
+#   aws s3api create-bucket --bucket <name> --region eu-west-1 \
+#     --create-bucket-configuration LocationConstraint=eu-west-1
+#   aws s3api put-bucket-versioning --bucket <name> --versioning-configuration Status=Enabled
+#   aws s3api put-public-access-block --bucket <name> --public-access-block-configuration \
+#     BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+
+terraform {
+  backend "s3" {
+    bucket       = "<name>"
+    key          = "event-quest/production.tfstate"
+    region       = "eu-west-1"
+    encrypt      = true
+    use_lockfile = true # needs Terraform 1.10 or newer
+  }
+}

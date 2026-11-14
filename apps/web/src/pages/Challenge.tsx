@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { ChallengeAttempt, QuestionResponse } from '@event-quest/shared';
+import { useSession } from '../lib/session';
 import { api } from '../lib/api';
 import { Page } from '../components/Page';
 import { PageLoader } from '../components/PageLoader';
@@ -9,7 +10,9 @@ import './Challenge.css';
 export function Challenge() {
   const { id } = useParams();
   const challengeId = Number(id);
-  const userId = localStorage.getItem('event-quest-user');
+  const userId = useSession()?.userId;
+  // Protected challenges only open with the signed code carried by their QR link.
+  const code = useSearchParams()[0].get('code') ?? undefined;
   const location = useLocation();
   const navigate = useNavigate();
   const [question, setQuestion] = useState<QuestionResponse>();
@@ -23,7 +26,7 @@ export function Challenge() {
 
   useEffect(() => {
     if (!userId || !Number.isInteger(challengeId)) return;
-    Promise.all([api.getQuestion(challengeId, userId), api.getProfile(userId)])
+    Promise.all([api.getQuestion(challengeId, code), api.getProfile()])
       .then(([loadedQuestion, profile]) => {
         setQuestion(loadedQuestion);
         const recordedAttempt = profile.history.find(item => item.challengeId === challengeId);
@@ -34,7 +37,7 @@ export function Challenge() {
         }
       })
       .catch(error => setMessage(error instanceof Error ? error.message : 'No se ha podido cargar el reto.'));
-  }, [challengeId, fromChallenges, userId]);
+  }, [challengeId, code, fromChallenges, userId]);
 
   if (!userId) return <Navigate to="/juego" replace state={{ returnTo: `${location.pathname}${location.search}` }} />;
   if (!question && !message) return <PageLoader label="Cargando reto" />;
@@ -53,11 +56,11 @@ export function Challenge() {
     setBusy(true);
     setMessage('');
     try {
-      const result = await api.submitAnswer(challengeId, { userId, answer });
+      const result = await api.submitAnswer(challengeId, { answer, code });
       setAttempt(result.attempt);
       setSubmission(result.attempt);
       setShowResult(true);
-      setQuestion(await api.getQuestion(challengeId, userId));
+      setQuestion(await api.getQuestion(challengeId, code));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido enviar la respuesta.');
     } finally {

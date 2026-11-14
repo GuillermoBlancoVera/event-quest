@@ -1,11 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { setSession, useSession } from '../lib/session';
 import { api } from '../lib/api';
 import { Bouquet } from '../components/Botanicals';
 import '../components/GameLayout.css';
 
 export function GameAccess() {
-  const existing = localStorage.getItem('event-quest-user');
+  const existing = useSession()?.userId;
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -22,8 +23,7 @@ export function GameAccess() {
     setMessage('');
     try {
       const user = await api.login({ name, password });
-      localStorage.setItem('event-quest-user', user.userId);
-      localStorage.setItem('event-quest-session-token', user.sessionToken);
+      setSession(user.sessionToken, user.userId);
       navigate(returnTo, { replace: true });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se ha podido iniciar sesión.');

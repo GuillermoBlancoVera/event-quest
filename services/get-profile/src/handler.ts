@@ -1,4 +1,30 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'; import { DynamoDBDocumentClient, BatchGetCommand, GetCommand } from '@aws-sdk/lib-dynamodb'; import type { APIGatewayProxyHandlerV2 } from 'aws-lambda'; import type { Challenge, PlayerProfile, User } from '@event-quest/shared';
-const db=DynamoDBDocumentClient.from(new DynamoDBClient({})); const json=(statusCode:number,body:unknown)=>({statusCode,headers:{'content-type':'application/json','access-control-allow-origin':'*'},body:JSON.stringify(body)});
-type StoredUser = User & { password?: string; PK: string; SK: string; entity: string };
-export const handler:APIGatewayProxyHandlerV2=async event=>{const id=event.pathParameters?.id; if(!id)return json(400,{code:'VALIDATION_ERROR',message:'El identificador del jugador es obligatorio.'}); const result=await db.send(new GetCommand({TableName:process.env.USERS_TABLE,Key:{PK:`USER#${id}`,SK:'PROFILE'}})); if(!result.Item)return json(404,{code:'NOT_FOUND',message:'No se ha encontrado el jugador.'}); const {password:_,PK,SK,entity,...user}=result.Item as StoredUser; const recordedAttempts=user.challengeAttempts??[], ids=[...new Set(recordedAttempts.map(attempt=>attempt.challengeId))], challenges=ids.length?await db.send(new BatchGetCommand({RequestItems:{[process.env.CHALLENGES_TABLE!]:{Keys:ids.map(challengeId=>({PK:`CHALLENGE#${challengeId}`,SK:'DETAIL'}))}}})):undefined; const challengeById=new Map((challenges?.Responses?.[process.env.CHALLENGES_TABLE!]??[] as Challenge[]).map(challenge=>[challenge.challengeId,challenge])); const history=recordedAttempts.map(attempt=>({...attempt,title:challengeById.get(attempt.challengeId)?.title??`Reto ${attempt.challengeId}`})).sort((a,b)=>b.answeredAt.localeCompare(a.answeredAt)); const score=recordedAttempts.reduce((total,attempt)=>total+attempt.awardedPoints,0)+(user.communityScans??[]).reduce((total,scan)=>total+scan.awardedPoints,0)+(user.porLaCaraAttempts??[]).reduce((total,attempt)=>total+attempt.awardedPoints,0); return json(200,{...user,score,history} satisfies PlayerProfile);};
+import { BatchGetCommand } from '@aws-sdk/lib-dynamodb';
+import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import type { Challenge, PlayerProfile } from '@event-quest/shared';
+import { api, challengeKey, db, getUser, HttpError, publicUser, qrSignature, reply, requireSession, requireUser, scoreOf, tables } from '@event-quest/server';
+
+const titlesFor = async (challengeIds: number[]) => {
+  const titles = new Map<number, string>();
+  for (let index = 0; index < challengeIds.length; index += 100) {
+    const result = await db.send(new BatchGetCommand({ RequestItems: { [tables.challenges()]: { Keys: challengeIds.slice(index, index + 100).map(challengeKey) } } }));
+    for (const challenge of (result.Responses?.[tables.challenges()] ?? []) as Array<Pick<Challenge, 'challengeId' | 'title'>>) titles.set(challenge.challengeId, challenge.title);
+  }
+  return titles;
+};
+
+export const handler: APIGatewayProxyHandlerV2 = api(async event => {
+  const session = await requireSession(event, ['admin', 'player']);
+  const caller = await requireUser(session);
+  const requested = event.pathParameters?.id;
+  const own = !requested || requested === 'me' || requested === caller.userId;
+  // A profile includes the full answer history, so only its owner (or an admin) may read it.
+  if (!own && session.role !== 'admin') throw new HttpError(403, 'FORBIDDEN', 'Solo puedes ver tu propio perfil.');
+  const stored = own ? caller : await getUser(requested);
+  if (!stored) throw new HttpError(404, 'NOT_FOUND', 'No se ha encontrado el jugador.');
+
+  const user = publicUser(stored);
+  const titles = await titlesFor([...new Set(user.challengeAttempts.map(attempt => attempt.challengeId))]);
+  const history = user.challengeAttempts.map(attempt => ({ ...attempt, title: titles.get(attempt.challengeId) ?? `Reto ${attempt.challengeId}` })).sort((a, b) => b.answeredAt.localeCompare(a.answeredAt));
+  const profile: PlayerProfile = { ...user, score: scoreOf(user), history, scanCode: own ? `${user.userId}.${await qrSignature('scan', user.userId)}` : undefined };
+  return reply(200, profile);
+});
