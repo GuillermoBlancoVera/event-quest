@@ -23,7 +23,14 @@ locals {
     "POST /por-la-cara/{id}"    = "por-la-cara"
     "GET /ranking"              = "get-ranking"
     "GET /stats"                = "get-stats"
-    "ANY /admin/{proxy+}"       = "admin"
+    # One route per method instead of ANY: an ANY route also catches the browser's OPTIONS preflight
+    # and hands it to the Lambda, which rejects it for lacking a session. Without an OPTIONS route,
+    # API Gateway answers the preflight itself from the CORS configuration below.
+    "GET /admin/{proxy+}"       = "admin"
+    "POST /admin/{proxy+}"      = "admin"
+    "PUT /admin/{proxy+}"       = "admin"
+    "PATCH /admin/{proxy+}"     = "admin"
+    "DELETE /admin/{proxy+}"    = "admin"
     "POST /media/uploads"       = "media"
     "POST /media/cancel"        = "media"
     "POST /media/{id}/complete" = "media"

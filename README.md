@@ -90,7 +90,7 @@ All routes except the first two require `Authorization: Bearer <session token>`.
 | `POST /community-scan/{code}` | player | Register a meeting from another player's QR |
 | `GET /ranking`, `GET /stats` | player | Leaderboard and totals |
 | `GET /media`, `POST /media/uploads`, `POST /media/{id}/complete`, `POST /media/cancel`, `PATCH\|DELETE /media/{id}` | guest, player | Gallery |
-| `ANY /admin/{players\|challenges\|por-la-cara\|affiliations\|settings\|uploads}` | admin | Administration |
+| `GET\|POST\|PUT\|PATCH\|DELETE /admin/{players\|challenges\|por-la-cara\|affiliations\|settings\|uploads}` | admin | Administration |
 
 ## Repository commands
 
