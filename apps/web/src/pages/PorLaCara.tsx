@@ -3,12 +3,13 @@ import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import type { PorLaCaraAttempt, PorLaCaraChallenge } from '@event-quest/shared';
 import { Page } from '../components/Page';
 import { PageLoader } from '../components/PageLoader';
+import { useSession } from '../lib/session';
 import { api } from '../lib/api';
 import './PorLaCara.css';
 
 export function PorLaCara() {
   const { id } = useParams();
-  const userId = localStorage.getItem('event-quest-user');
+  const userId = useSession()?.userId;
   const location = useLocation();
   const [challenge, setChallenge] = useState<PorLaCaraChallenge>();
   const [attempt, setAttempt] = useState<PorLaCaraAttempt>();
@@ -18,7 +19,7 @@ export function PorLaCara() {
 
   useEffect(() => {
     if (!id || !userId) return;
-    Promise.all([api.getPorLaCaraChallenge(id), api.getProfile(userId)])
+    Promise.all([api.getPorLaCaraChallenge(id), api.getProfile()])
       .then(async ([loadedChallenge, profile]) => {
         setChallenge(loadedChallenge);
         const recordedAttempt = profile.porLaCaraAttempts?.find(item => item.porLaCaraId === id);
@@ -28,7 +29,7 @@ export function PorLaCara() {
         }
         if (requestedId.current === id) return;
         requestedId.current = id;
-        const result = await api.claimPorLaCara(id, userId);
+        const result = await api.claimPorLaCara(id);
         setAttempt(result.attempt);
       })
       .catch(error => setMessage(error instanceof Error ? error.message : 'no se ha podido cargar el reto.'));

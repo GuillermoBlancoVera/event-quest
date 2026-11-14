@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Affiliation as AffiliationType, RankingResponse, Stats } from '@event-quest/shared';
+import { assetsUrl } from '../lib/assets';
 import { api } from '../lib/api';
 import { Page } from '../components/Page';
 import { PageLoader } from '../components/PageLoader';
 import { RankingAffiliationIcon, RankingAvatar } from './Ranking';
 import './Affiliation.css';
 
-const assetsUrl = (key: string) => `https://event-quest-production-assets-372212891039.s3.eu-west-1.amazonaws.com/${key.split('/').map(encodeURIComponent).join('/')}`;
 
 export function Affiliation() {
   const { id } = useParams();
