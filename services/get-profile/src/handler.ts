@@ -1,6 +1,6 @@
 import { BatchGetCommand } from '@aws-sdk/lib-dynamodb';
 import type { APIGatewayProxyHandlerV2 } from 'aws-lambda';
-import type { Challenge, PlayerProfile } from '@event-quest/shared';
+import type { Challenge, PlayerProfile, PublicProfile } from '@event-quest/shared';
 import { api, challengeKey, db, getUser, HttpError, publicUser, qrSignature, reply, requireSession, requireUser, scoreOf, tables } from '@event-quest/server';
 
 const titlesFor = async (challengeIds: number[]) => {
@@ -12,15 +12,25 @@ const titlesFor = async (challengeIds: number[]) => {
   return titles;
 };
 
+const userIdPattern = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+const notFound = () => new HttpError(404, 'NOT_FOUND', 'No se ha encontrado el jugador.');
+
 export const handler: APIGatewayProxyHandlerV2 = api(async event => {
   const session = await requireSession(event, ['admin', 'player']);
   const caller = await requireUser(session);
   const requested = event.pathParameters?.id;
   const own = !requested || requested === 'me' || requested === caller.userId;
-  // A profile includes the full answer history, so only its owner (or an admin) may read it.
-  if (!own && session.role !== 'admin') throw new HttpError(403, 'FORBIDDEN', 'Solo puedes ver tu propio perfil.');
+  if (!own && !userIdPattern.test(requested)) throw notFound();
   const stored = own ? caller : await getUser(requested);
-  if (!stored) throw new HttpError(404, 'NOT_FOUND', 'No se ha encontrado el jugador.');
+  if (!stored) throw notFound();
+  // A full profile includes the answer history, so only its owner (or an admin) may read it.
+  // Everyone else gets the public card, built field by field so nothing new leaks by default.
+  if (!own && session.role !== 'admin') {
+    // Admin accounts are not players: they stay out of the ranking and have no public profile.
+    if (stored.role === 'admin') throw notFound();
+    const card: PublicProfile = { userId: stored.userId, name: stored.name, gender: stored.gender, avatarKey: stored.avatarKey, description: stored.description };
+    return reply(200, card);
+  }
 
   const user = publicUser(stored);
   const titles = await titlesFor([...new Set(user.challengeAttempts.map(attempt => attempt.challengeId))]);

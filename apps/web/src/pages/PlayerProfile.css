@@ -407,3 +407,30 @@
 @media (max-width: 680px) {
   .profile-main-avatar { width: 132px; height: 132px; }
 }
+
+.profile-name:has(+ .profile-description) {
+  margin-bottom: 0;
+}
+
+.profile-description {
+  max-width: 34rem;
+  margin: 0 0 1.25rem;
+  padding: 0 1.5rem;
+  color: var(--ink-strong);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.profile-back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--game-foreground);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

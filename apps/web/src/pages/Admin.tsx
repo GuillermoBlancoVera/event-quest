@@ -1,5 +1,6 @@
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { PLAYER_DESCRIPTION_MAX_LENGTH } from '@event-quest/shared';
 import type { AdminAffiliationInput, AdminChallenge, AdminChallengeInput, AdminPlayer, AdminPlayerInput, AdminPorLaCara, AdminPorLaCaraInput, AdminSettings, Affiliation } from '@event-quest/shared';
 import { adminApi, api } from '../lib/api';
 import { appUrl, assetsUrl, uploadFile } from '../lib/assets';
@@ -122,7 +123,7 @@ function Players() {
   return <>
     <div className="admin-toolbar"><p>{items.length} cuentas. Las de administración no aparecen en la clasificación.</p><button className="button" onClick={() => setDraft({ name: '', password: '', role: 'player' })}>Nuevo jugador</button></div>
     {error && !draft && <p className="notice">{error}</p>}
-    <Table head={['Nombre', 'Rol', 'Comunidad', 'Puntos']} empty="Todavía no hay jugadores.">{items.map(player => <tr key={player.userId}><td>{player.name}</td><td>{player.role === 'admin' ? 'Admin' : 'Jugador'}</td><td>{affiliationName(player.affiliationId)}</td><td>{player.score}</td><td className="admin-row-actions"><button onClick={() => setDraft({ userId: player.userId, name: player.name, password: '', role: player.role ?? 'player', gender: player.gender ?? null, affiliationId: player.affiliationId ?? null, avatarKey: player.avatarKey ?? null })}>Editar</button><button onClick={() => setDeleting(player)}>Borrar</button></td></tr>)}</Table>
+    <Table head={['Nombre', 'Rol', 'Comunidad', 'Puntos']} empty="Todavía no hay jugadores.">{items.map(player => <tr key={player.userId}><td>{player.name}</td><td>{player.role === 'admin' ? 'Admin' : 'Jugador'}</td><td>{affiliationName(player.affiliationId)}</td><td>{player.score}</td><td className="admin-row-actions"><button onClick={() => setDraft({ userId: player.userId, name: player.name, password: '', role: player.role ?? 'player', gender: player.gender ?? null, affiliationId: player.affiliationId ?? null, avatarKey: player.avatarKey ?? null, description: player.description ?? '' })}>Editar</button><button onClick={() => setDeleting(player)}>Borrar</button></td></tr>)}</Table>
     {draft && <Modal title={draft.userId ? 'Editar jugador' : 'Nuevo jugador'} onClose={() => setDraft(undefined)}><EditorForm onSubmit={save} onCancel={() => setDraft(undefined)} error={error}>
       <label>Nombre<input required maxLength={80} value={draft.name} onChange={event => set({ name: event.target.value })} /></label>
       <label>{draft.userId ? 'Nueva contraseña (déjala vacía para no cambiarla)' : 'Contraseña'}<input required={!draft.userId} minLength={4} autoComplete="new-password" value={draft.password ?? ''} onChange={event => set({ password: event.target.value })} /></label>
@@ -130,6 +131,7 @@ function Players() {
       <label>Género (para «1º» o «1ª» en la clasificación)<select value={draft.gender ?? ''} onChange={event => set({ gender: (event.target.value || null) as PlayerDraft['gender'] })}><option value="">Sin indicar</option><option value="female">Femenino</option><option value="male">Masculino</option></select></label>
       <label>Comunidad o cabaña<select value={draft.affiliationId ?? ''} onChange={event => set({ affiliationId: event.target.value || null })}><option value="">Ninguna</option>{affiliations.map(item => <option key={item.affiliationId} value={item.affiliationId}>{item.parentAffiliationId ? `${affiliationName(item.parentAffiliationId)} › ` : ''}{item.name}</option>)}</select></label>
       <ImageField kind="avatar" value={draft.avatarKey} onChange={avatarKey => set({ avatarKey })} />
+      <label>Descripción (la ven los demás jugadores en su perfil)<textarea maxLength={PLAYER_DESCRIPTION_MAX_LENGTH} rows={4} value={draft.description ?? ''} onChange={event => set({ description: event.target.value })} /><small className="admin-hint">{(draft.description ?? '').length}/{PLAYER_DESCRIPTION_MAX_LENGTH}</small></label>
       {draft.userId && <label className="admin-check"><input type="checkbox" checked={Boolean(draft.resetProgress)} onChange={event => set({ resetProgress: event.target.checked })} />Borrar sus respuestas y puntos</label>}
     </EditorForm></Modal>}
     {deleting && <ConfirmDelete what={`a ${deleting.name}`} onCancel={() => setDeleting(undefined)} onConfirm={async () => { await run(() => adminApi.deletePlayer(deleting.userId)); setDeleting(undefined); }} />}

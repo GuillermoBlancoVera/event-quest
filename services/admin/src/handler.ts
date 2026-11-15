@@ -4,6 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import type { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2 } from 'aws-lambda';
 import type { AdminAffiliationInput, AdminAssetUploadRequest, AdminAssetUploadResponse, AdminChallenge, AdminChallengeInput, AdminPlayer, AdminPlayerInput, AdminPorLaCara, AdminPorLaCaraInput, AdminSettings, AdminSettingsInput, Affiliation, Challenge, PorLaCaraChallenge } from '@event-quest/shared';
+import { PLAYER_DESCRIPTION_MAX_LENGTH } from '@event-quest/shared';
 import { affiliationKey, api, auditItem, challengeKey, db, findUserByName, getSettings, getUser, hashPassword, HttpError, parseBody, porLaCaraKey, publicUser, qrSignature, reply, requireSession, requireUser, scanAll, scoreOf, settingsKey, tables, text, userKey, type Session, type StoredUser } from '@event-quest/server';
 
 const s3 = new S3Client({});
@@ -25,6 +26,15 @@ type Context = { event: APIGatewayProxyEventV2; session: Session; method: string
 const audit = ({ event, session }: Context, action: string, metadata?: Record<string, unknown>) => db.send(new PutCommand({ TableName: tables.audit(), Item: auditItem(action, event, session, metadata) }));
 
 // ---------------------------------------------------------------- players
+
+/** Players read this on each other's profiles: plain text only, trimmed, without control characters and with a hard length limit. */
+const playerDescription = (value: unknown) => {
+  if (value === null || value === '') return undefined;
+  if (typeof value !== 'string') throw invalid('La descripción debe ser un texto.');
+  const description = value.replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  if (description.length > PLAYER_DESCRIPTION_MAX_LENGTH) throw invalid(`La descripción no puede superar los ${PLAYER_DESCRIPTION_MAX_LENGTH} caracteres.`);
+  return description || undefined;
+};
 
 const adminPlayer = (item: StoredUser): AdminPlayer => ({ ...publicUser(item), score: scoreOf(item) });
 
@@ -71,6 +81,7 @@ const players = async (context: Context) => {
     group: text(input.group, 80)?.toLocaleLowerCase() ?? base.group,
     affiliationId: input.affiliationId === undefined ? base.affiliationId : affiliationId,
     avatarKey: input.avatarKey === undefined ? base.avatarKey : assetKey(input.avatarKey, 'avatars/'),
+    description: input.description === undefined ? base.description : playerDescription(input.description),
     updatedAt: existing ? base.updatedAt : now,
   };
   if (password) {

@@ -7,6 +7,8 @@ export interface EventSessionResponse { sessionToken: string; role: SessionRole;
 
 /** `scanCode` is only present on the caller's own profile; it is what their QR encodes. */
 export interface PlayerProfile extends User { score: number; history: Array<ChallengeAttempt & { title: string }>; scanCode?: string; }
+/** What one player may see of another: who they are and what the couple wrote about them, never their answers. */
+export type PublicProfile = Pick<User, 'userId' | 'name' | 'gender' | 'avatarKey' | 'description'>;
 export interface SubmitAnswerRequest { answer: string; code?: string; }
 export interface SubmitAnswerResponse { correct: boolean; awardedPoints: number; score: number; attempt: ChallengeAttempt; }
 export interface CommunityScanResponse { awardedPoints: number; progress: number; target: number; alreadyScanned?: boolean; scan: CommunityScan; player: Pick<User, 'userId' | 'name' | 'avatarKey'>; community: Affiliation; }
@@ -27,7 +29,7 @@ export interface MediaPage { items: EventMedia[]; nextCursor?: string; }
 export interface ApiError { code: string; message: string; }
 
 export interface AdminPlayer extends User { score: number; }
-export interface AdminPlayerInput { name: string; password?: string; role?: UserRole; gender?: Gender | null; team?: string; group?: string; affiliationId?: string | null; avatarKey?: string | null; resetProgress?: boolean; }
+export interface AdminPlayerInput { name: string; password?: string; role?: UserRole; gender?: Gender | null; team?: string; group?: string; affiliationId?: string | null; avatarKey?: string | null; description?: string | null; resetProgress?: boolean; }
 /** `qrPath` is the app path to print as a QR, including the signed code when the challenge is protected. */
 export interface AdminChallenge extends Challenge { qrPath: string; }
 export type AdminChallengeInput = Omit<Challenge, 'challengeId'> & { challengeId?: number };
@@ -44,6 +46,7 @@ export interface EventApi {
   login(input: LoginRequest): Promise<SessionUser>;
   createEventSession(input: EventSessionRequest): Promise<EventSessionResponse>;
   getProfile(): Promise<PlayerProfile>;
+  getPlayerProfile(userId: string): Promise<PublicProfile>;
   getChallenges(): Promise<ChallengeListItem[]>;
   getPorLaCaraChallenges(): Promise<PorLaCaraChallengeListItem[]>;
   getQuestion(id: number, code?: string): Promise<QuestionResponse>;
