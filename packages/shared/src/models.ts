@@ -7,7 +7,9 @@ export interface PorLaCaraAttempt { porLaCaraId: string; awardedPoints: number; 
 export interface PorLaCaraChallenge { porLaCaraId: string; title: string; description: string; points: number; enabled: boolean; createdAt: string; updatedAt: string; }
 export interface Affiliation { affiliationId: string; name: string; parentAffiliationId?: string; avatarKey?: string; story?: string; createdAt: string; updatedAt: string; }
 export type Gender = 'male' | 'female';
-export interface User { userId: string; name: string; role?: UserRole; gender?: Gender; team: string; group: string; affiliationId?: string; challengeAttempts: ChallengeAttempt[]; communityScans?: CommunityScan[]; porLaCaraAttempts?: PorLaCaraAttempt[]; avatarKey?: string; createdAt: string; updatedAt: string; }
+export interface User { userId: string; name: string; role?: UserRole; gender?: Gender; team: string; group: string; affiliationId?: string; challengeAttempts: ChallengeAttempt[]; communityScans?: CommunityScan[]; porLaCaraAttempts?: PorLaCaraAttempt[]; avatarKey?: string; description?: string; createdAt: string; updatedAt: string; }
+/** The longest description an admin may write about a player. */
+export const PLAYER_DESCRIPTION_MAX_LENGTH = 500;
 /** `qrProtected` challenges can only be opened with the signed code that is embedded in their QR link. */
 export interface Challenge { challengeId: number; title: string; question: string; answers: string[]; correctAnswer: string; points: number; enabled: boolean; affiliationId?: string; qrProtected?: boolean; }
 export interface Settings { gameEnabled: boolean; rankingEnabled: boolean; maintenanceMode: boolean; rankingFrozenAt?: string; featureFlags: Record<string, boolean>; eventCode?: string; eventCodeVersion?: number; }

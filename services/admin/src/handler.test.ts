@@ -72,6 +72,41 @@ describe('players', () => {
   });
 });
 
+describe('player descriptions', () => {
+  const stored = { PK: 'USER#u1', SK: 'PROFILE', entity: 'USER', userId: 'u1', name: 'sara', team: 't', group: 'g', challengeAttempts: [], description: 'La de antes.', updatedAt: '2027-01-01' };
+  const edit = async (body: object) => call(handler, { method: 'PUT', path: '/admin/players/u1', token: await asAdmin(), body: { name: 'sara', ...body } });
+  const saved = () => db.commandCalls(PutCommand)[0].args[0].input.Item;
+  beforeEach(() => db.on(GetCommand, { TableName: 'users', Key: { PK: 'USER#u1', SK: 'PROFILE' } }).resolves({ Item: stored }));
+
+  it('saves the text as written, trimmed and without control characters', async () => {
+    const { status, body } = await edit({ description: '  Baila <b>fatal</b>\u0000\u0007,\r\npero con ganas.\n\n\n\nSiempre.  ' });
+    expect(status).toBe(200);
+    expect(body.description).toBe('Baila <b>fatal</b>,\npero con ganas.\n\nSiempre.');
+    expect(saved()?.description).toBe(body.description);
+  });
+
+  it('keeps the current one when the field is not sent and removes it when emptied', async () => {
+    await edit({});
+    expect(saved()?.description).toBe('La de antes.');
+    db.resetHistory();
+    expect((await edit({ description: '   ' })).body).not.toHaveProperty('description');
+    expect(saved()?.description).toBeUndefined();
+    db.resetHistory();
+    await edit({ description: null });
+    expect(saved()?.description).toBeUndefined();
+  });
+
+  it('rejects text over the limit and anything that is not text', async () => {
+    expect((await edit({ description: 'a'.repeat(500) })).status).toBe(200);
+    for (const description of ['a'.repeat(501), 42, ['x'], { html: '<script>' }]) {
+      const { status, body } = await edit({ description });
+      expect(status).toBe(400);
+      expect(body.code).toBe('VALIDATION_ERROR');
+    }
+    expect(db.commandCalls(PutCommand).filter(item => item.args[0].input.TableName === 'users')).toHaveLength(1);
+  });
+});
+
 describe('challenges', () => {
   it('validates the question and returns the signed QR path', async () => {
     db.on(ScanCommand).resolves({ Items: [{ PK: 'CHALLENGE#4', challengeId: 4 }] });

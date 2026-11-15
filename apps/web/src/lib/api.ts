@@ -35,6 +35,7 @@ export const api: EventApi = {
   login: input => request('/login', { method: 'POST', body: input }),
   createEventSession: input => request('/event-session', { method: 'POST', body: input }),
   getProfile: () => request('/profile/me'),
+  getPlayerProfile: userId => request(`/profile/${id(userId)}`),
   getChallenges: () => request('/challenges'),
   getPorLaCaraChallenges: () => request('/por-la-cara'),
   getQuestion: (challengeId, code) => request(`/question/${challengeId}${query({ code })}`),

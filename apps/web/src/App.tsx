@@ -32,6 +32,7 @@ export function App() {
     <Route path="/juego" element={<GameAccess/>}/>
     <Route element={<PlayerArea/>}>
       <Route path="/juego/perfil" element={<PlayerProfile/>}/>
+      <Route path="/juego/perfil/:id" element={<PlayerProfile/>}/>
       <Route path="/juego/retos" element={<PlayerChallenges/>}/>
       <Route path="/juego/clasificacion" element={<Ranking/>}/>
       <Route path="/juego/afiliacion/:id" element={<Affiliation/>}/>

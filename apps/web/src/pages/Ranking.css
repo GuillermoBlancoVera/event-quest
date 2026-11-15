@@ -174,3 +174,28 @@
   color: var(--clay);
   background: color-mix(in srgb, var(--clay) 16%, transparent);
 }
+
+/* The name links to the player's profile and its hit area covers the whole row;
+   the community icons sit above it so they keep their own links. */
+.player-link {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.player-link::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.ranking li:has(.player-link),
+.affiliation-participants li {
+  position: relative;
+}
+
+.ranking-affiliations,
+.affiliation-participant-summary {
+  position: relative;
+  z-index: 1;
+}
